@@ -17,8 +17,14 @@ To solve a crossword using this Agent Skill:
 
 ## Installation & Deployment
 
-This project is packaged as an **Agentic Skill Bundle**. To deploy it to an agent runtime (e.g., OpenClaw):
+This project is packaged as an **Agentic Skill Bundle**. 
 
+### Option 1: The `.skill` Package (Recommended)
+Many OpenClaw/Agentic runtimes support the `.skill` archive format (a zipped bundle containing the identity and tools).
+1. Download `cryptic-solver.skill` from the repository releases (or build it locally by zipping the repository contents and renaming to `.skill`).
+2. Load the `.skill` file directly into your agent runtime's Skill Manager.
+
+### Option 2: Clone & Mount
 1. **Clone the full repository** (not just the `SKILL.md`):
    ```bash
    git clone https://github.com/nikcholer/cryptic-solver.git
