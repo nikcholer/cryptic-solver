@@ -35,16 +35,12 @@ The solver tackles our toolkit's strongest clue types first to lock in high-conf
 ### 2. Constraining the Search Space
 Every word placed in the grid generates **checked letters** for intersecting clues. This is where the algorithmic engine shines. A purely semantic clue (like a Double Definition) might initially have a search space of 40,000 words. But as intersecting letters are found (e.g., narrowed to `C.M.....`), the search space shrinks to a few dozen candidates. The LLM Evaluator only needs to rank those few remaining valid words.
 
-### 3. Iterative Deepening
-The solve process operates as a loop:
-1. **Parse & Grade**: The LLM flags likely clue types and splits the definition/fodder.
-2. **Algorithmic Generation**: The algorithmic engine generates candidate lists for every clue, using current grid constraints (checked letters).
-3. **Ranking**: The LLM evaluates the candidates against the semantic definition.
-4. **Placement**: If an answer hits a high enough confidence threshold (perfectly matching the algorithmic constraint *and* strongly preferred semantically), it is placed in the grid.
-5. **Repeat**: Loop back to Step 2 with the newly updated grid constraints.
-
-### 4. Resolving Ambiguity (Beam Search)
-Sometimes, the solver will be stuck with multiple plausible answers matching the crossed letters (e.g., `B_R_` could be `BARE` or `BARK`). Instead of forcing a guess, the solver can branch the grid (Beam Search). It runs the loop on intersecting clues for both alternate realities. If placing `BARE` leads to an unsolveable intersecting clue, that branch is pruned, proving `BARK` as the correct answer.
+### 3. Execution Pass and Termination (Graceful Yielding)
+The solve process operates as a loop across all clues. The Agent should not get stuck attempting to brute-force a single clue:
+1. **Sweep & Solve**: Scans all unresolved clues. Queries `grid_manager.py` for each clue's current checking-letter constraints (e.g., `S...S`).
+2. **Algorithmic Execution**: The LLM routes the categorized parts to the `cryptic_skills/` CLI Python scripts for deterministic candidate generation.
+3. **Commit**: If the Agent is highly confident in an algorithmic candidate, it commits it to the Grid State, unlocking new intersecting checking letters for the next sweep.
+4. **Termination Condition**: To prevent infinite hallucination loops, if the Agent completes a full sweep of the remaining clues without adding any *new* answers to the grid, it abandons the loop. It immediately yields control back to the human, outputting the partial grid and asking for hints or guidance. This allows the Agent to handle novel or complex general knowledge clues without bricking the session.
 
 ---
 
