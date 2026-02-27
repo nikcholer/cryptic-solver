@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Puzzle state and local samples (optional to ignore, but good for cleanliness)
+puzzle_*/
+mock_*.json
+parse_clues.py
+
+# Large datasets
+# If you want to keep the wordlist in the repo, comment the line below
+# cryptic_skills/words.txt
+
+# OS
+.DS_Store
+Thumbs.db
