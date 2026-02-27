@@ -68,10 +68,11 @@ If asked to solve **19-Across: Glides using paddle on board ship (5)**:
 When an external user provides an image or text file (e.g., a PDF) of a crossword:
 
 ### 1. Initialization (The Workspace Sandbox)
-Before using any Python tools, you must use your native LLM reasoning capabilities to:
-- **Extract** the clues from the provided puzzle into a structured format (e.g., `clues.yaml`) and establish their lengths/directions. Save this file to the **Current Working Directory**.
+Before using any Python tools, you must use your native LLM reasoning and multimodal vision capabilities to:
+- **Map the Grid:** If given an image or PDF of the crossword, use your visual understanding to map the 2D grid, calculating the `x, y` starting coordinates, `length`, and `direction` of every numbered clue.
+- **Extract** the clues from the provided puzzle into a structured format (e.g., `clues.yaml`). Save this file to the **Current Working Directory**.
 - **Categorize** the clues by identifying the definition vs. wordplay.
-- **Initialize** a blank grid state JSON file (e.g., `grid_state.json`) describing the layout of the crossword. Save this to the **Current Working Directory**. 
+- **Initialize** a blank grid state JSON file (e.g., `grid_state.json`) containing the spatial coordinates you visually mapped. Save this to the **Current Working Directory**. 
 
 *Do NOT write state files into the `cryptic_skills/` template directory. The user will run you from a dedicated puzzle workspace folder.*
 

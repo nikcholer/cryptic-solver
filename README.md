@@ -60,6 +60,7 @@ Here is a breakdown of how the Neuro-Symbolic division of labor applies to commo
 ### 1. Anagram Clues
 **Highly Algorithmic-Friendly**
 - **LLM**: Detects the anagram indicator, identifies the exact fodder span, and confirms the definition half.
+- **Multimodal Grid Mapping**: Native Agent runtimes can use Vision capabilities to "look" at an image of a crossword and mathematically map the 15x15 `x, y` geometric layout of the interlocking clues into `grid_state.json`.
 - **Algorithm**: Generates anagrams, filters by enumeration/checked letters, and validates against a dictionary.
 - *Pattern: Parser → Anagram Generator → Ranker*
 

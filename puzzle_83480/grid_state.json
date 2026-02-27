@@ -1,0 +1,189 @@
+{
+  "width": 15,
+  "height": 15,
+  "clues": {
+    "1A": {
+      "x": 0,
+      "y": 0,
+      "length": 6,
+      "direction": "Across"
+    },
+    "4A": {
+      "x": 7,
+      "y": 0,
+      "length": 8,
+      "direction": "Across"
+    },
+    "10A": {
+      "x": 0,
+      "y": 2,
+      "length": 9,
+      "direction": "Across"
+    },
+    "11A": {
+      "x": 10,
+      "y": 2,
+      "length": 5,
+      "direction": "Across"
+    },
+    "12A": {
+      "x": 0,
+      "y": 4,
+      "length": 7,
+      "direction": "Across"
+    },
+    "13A": {
+      "x": 8,
+      "y": 4,
+      "length": 7,
+      "direction": "Across"
+    },
+    "14A": {
+      "x": 0,
+      "y": 6,
+      "length": 5,
+      "direction": "Across"
+    },
+    "15A": {
+      "x": 6,
+      "y": 6,
+      "length": 8,
+      "direction": "Across"
+    },
+    "18A": {
+      "x": 1,
+      "y": 8,
+      "length": 8,
+      "direction": "Across"
+    },
+    "20A": {
+      "x": 10,
+      "y": 8,
+      "length": 5,
+      "direction": "Across"
+    },
+    "23A": {
+      "x": 0,
+      "y": 10,
+      "length": 7,
+      "direction": "Across"
+    },
+    "25A": {
+      "x": 8,
+      "y": 10,
+      "length": 7,
+      "direction": "Across"
+    },
+    "26A": {
+      "x": 0,
+      "y": 12,
+      "length": 5,
+      "direction": "Across"
+    },
+    "27A": {
+      "x": 6,
+      "y": 12,
+      "length": 9,
+      "direction": "Across"
+    },
+    "28A": {
+      "x": 0,
+      "y": 14,
+      "length": 8,
+      "direction": "Across"
+    },
+    "29A": {
+      "x": 9,
+      "y": 14,
+      "length": 6,
+      "direction": "Across"
+    },
+    "1D": {
+      "x": 0,
+      "y": 0,
+      "length": 8,
+      "direction": "Down"
+    },
+    "2D": {
+      "x": 2,
+      "y": 0,
+      "length": 7,
+      "direction": "Down"
+    },
+    "3D": {
+      "x": 4,
+      "y": 0,
+      "length": 9,
+      "direction": "Down"
+    },
+    "5D": {
+      "x": 8,
+      "y": 0,
+      "length": 14,
+      "direction": "Down"
+    },
+    "6D": {
+      "x": 10,
+      "y": 0,
+      "length": 5,
+      "direction": "Down"
+    },
+    "7D": {
+      "x": 12,
+      "y": 0,
+      "length": 7,
+      "direction": "Down"
+    },
+    "8D": {
+      "x": 14,
+      "y": 0,
+      "length": 6,
+      "direction": "Down"
+    },
+    "9D": {
+      "x": 6,
+      "y": 1,
+      "length": 14,
+      "direction": "Down"
+    },
+    "16D": {
+      "x": 10,
+      "y": 6,
+      "length": 9,
+      "direction": "Down"
+    },
+    "17D": {
+      "x": 14,
+      "y": 7,
+      "length": 8,
+      "direction": "Down"
+    },
+    "19D": {
+      "x": 2,
+      "y": 8,
+      "length": 7,
+      "direction": "Down"
+    },
+    "21D": {
+      "x": 12,
+      "y": 8,
+      "length": 7,
+      "direction": "Down"
+    },
+    "22D": {
+      "x": 0,
+      "y": 9,
+      "length": 6,
+      "direction": "Down"
+    },
+    "24D": {
+      "x": 4,
+      "y": 10,
+      "length": 5,
+      "direction": "Down"
+    }
+  },
+  "placed_answers": {
+    "4A": "ISOLATED"
+  }
+}
