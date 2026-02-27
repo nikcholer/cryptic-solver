@@ -15,6 +15,20 @@ To solve a crossword using this Agent Skill:
 4. **Invoke**: Tell the agent to target your workspace. Example prompt:
    > *"Using your Cryptic Crossword Solver skill, solve the puzzle found in `./puzzle_83479/crossword.pdf`. Save all your state files to that directory."*
 
+## Installation & Deployment
+
+This project is packaged as an **Agentic Skill Bundle**. To deploy it to an agent runtime (e.g., OpenClaw):
+
+1. **Clone the full repository** (not just the `SKILL.md`):
+   ```bash
+   git clone https://github.com/nikcholer/cryptic-solver.git
+   ```
+2. **Install local dependencies** to ensure the Python solvers have the necessary libraries:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. **Mount the Directory**: In your agent configuration, point the skill search path to the root of this repository. The `SKILL.md` file will serve as the instruction set, and the agent will invoke the scripts in `cryptic_skills/` via relative paths.
+
 ## The "Two-Engine" Architecture
 
 This solver is architected as a pipeline with feedback loops, separating the semantic tasks from the raw computational tasks:
