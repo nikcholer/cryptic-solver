@@ -6,6 +6,15 @@ While it is, of course, of no practical value to solve cryptic crosswords algori
 
 Neither an LLM nor a pure algorithmic solver can handle cryptic crosswords effectively on their own, but together they cover each other's weaknesses perfectly. For example, an anagram clue typically has indicator words ("mixed", "confused", "scrambled") that identify it as an anagram. Validating that possible solutions are anagrams of the given letters is nearly impossible for a language model due to tokenization constraints. However, it is mathematically straightforward with an algorithmic approach using wordlists and pre-calculated anagrams.
 
+## Quick Start: Using the Solver
+
+To solve a crossword using this Agent Skill:
+1. **Initialize a Workspace**: Create a new, blank folder for your puzzle (e.g., `mkdir puzzle_83479`). This acts as an isolated sandbox for the agent to track its state.
+2. **Provide the Input**: Place your crossword image or PDF inside this new workspace folder.
+3. **Mount the Agent**: Point your OpenClaw (or ClaudeCode / compatible agent runtime) to this project directory so it loads the Cryptic Solver `SKILL.md`.
+4. **Invoke**: Tell the agent to target your workspace. Example prompt:
+   > *"Using your Cryptic Crossword Solver skill, solve the puzzle found in `./puzzle_83479/crossword.pdf`. Save all your state files to that directory."*
+
 ## The "Two-Engine" Architecture
 
 This solver is architected as a pipeline with feedback loops, separating the semantic tasks from the raw computational tasks:
