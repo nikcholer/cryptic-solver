@@ -83,8 +83,14 @@ FOR EACH unsolved clue in clues.yaml:
     STEP 2 — CATEGORIZE & SHORTLIST
     Using your semantic understanding, analyse the clue:
       a) Identify the DEFINITION (the straight meaning, usually at the start or end).
-      b) Generate a SHORTLIST of candidate answers for that definition 
+      b) Generate a SHORTLIST of candidate answers for that definition
          (as if it were a simple, non-cryptic crossword clue) that fit the current pattern.
+         - If you are stuck, the pattern is very open (few checkers), or you need breadth: spawn a lightweight sub-agent for shortlist generation using **GPT‑5 mini** (`model: "gpt-mini"`).
+           - Prefer **one clue per sub-agent call**.
+           - Prompt style (definition): `Give me all reasonable suggestions for this simple crossword clue: "<definition> <enum>". Pattern: <pattern>. Return ONLY a plain newline-separated list of candidate answers; no explanation.`
+           - If the DEFINITION is a **manageable closed set** (e.g., "European capital", "London borough", "US state"), ask for **high recall**: `Give me all reasonable suggestions for: "<category> <enum>" ...` and filter locally by pattern/length.
+           - If the DEFINITION implies a **huge open set** (e.g., "river", "mountain", "city"), qualify it to keep the list useful (e.g., "major rivers", "famous rivers", "rivers used in a national newspaper crossword").
+           - Treat this as candidate generation only; you still must confirm via wordplay + deterministic tools before committing.
       c) Identify the WORDPLAY TYPE. Look for indicator words:
          - Anagram indicators → use anagram.py
          - Hidden word indicators → use hidden.py
