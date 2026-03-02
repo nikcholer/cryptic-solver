@@ -108,13 +108,21 @@ FOR EACH unsolved clue in clues.yaml:
     - If the tool returns 0 candidates, move on — do not guess.
     - If the tool returns candidates, proceed to STEP 4.
 
-    STEP 4 — EVALUATE (Confirm with Shortlist)
-    For each candidate returned by the deterministic tool:
-      a) Is this candidate in the semantic SHORTLIST you generated in Step 2b?
-      b) If not, does it otherwise strongly semantically match the DEFINITION?
+    STEP 4 — EVALUATE (MANAGING AGENT RESPONSIBILITY)
+    For each candidate returned by the tool, the managing agent MUST act as the ranker:
+      a) Does it semantically match the DEFINITION you identified? (Primary.)
+         - Prefer candidates that appear in the semantic SHORTLIST from Step 2b.
+      b) Does it fit the pattern constraints? (Hard constraint.)
       c) Is it a real, common English word appropriate for a crossword?
-    If exactly ONE candidate passes all checks with high confidence, proceed to STEP 5.
-    If multiple candidates pass, note them and move on (do not commit uncertain answers).
+      d) Does the wordplay justify it — including accounting for **every letter** in the answer?
+
+    IMPORTANT:
+    - Tools are *generators*. They may return multiple mechanically-valid substrings/anagrams.
+    - The managing agent is responsible for choosing the best candidate using semantic
+      definition-fit and overall clue plausibility.
+
+    Proceed to STEP 5 when there is exactly ONE clear best candidate with high confidence.
+    If multiple plausible candidates remain, note them and move on.
     If zero candidates pass, move on.
 
     STEP 5 — COMMIT
