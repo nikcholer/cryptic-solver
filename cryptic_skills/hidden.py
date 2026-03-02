@@ -59,18 +59,23 @@ def solve_hidden(fodder, length, pattern=None, wordlist_path=WORDLIST_PATH):
         return {"error": f"Pattern length ({len(pattern)}) does not match required length ({length})"}
 
     candidates = []
-    
-    valid_words = None # Lazy load only if we find a match
+
+    valid_words = None  # Lazy load only if we find a pattern match
 
     # Slide a window of 'length' across the clean string
     for i in range(len(clean_fodder) - length + 1):
         substring = clean_fodder[i:i+length]
-        
+
         # 1. Filter by intersecting Grid Pattern first (fastest)
-        if filter_by_pattern(substring, pattern):
-            # To be a true hidden word, it usually must cross at least one word boundary from the original clue structure.
-            # However, for v1 programmatic simplicity and robustness, we will return ANY pattern-matching substring.
-            # A downstream Semantic LLM ranker will evaluate if it's the right answer.
+        if not filter_by_pattern(substring, pattern):
+            continue
+
+        # 2. Dictionary validation (required)
+        if valid_words is None:
+            valid_words = load_wordlist(wordlist_path)
+
+        if substring in valid_words:
+            # Note: we do not currently enforce crossing a word boundary.
             candidates.append(substring)
 
     # Deduplicate list while preserving order
