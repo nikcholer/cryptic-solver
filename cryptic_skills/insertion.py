@@ -15,7 +15,7 @@ import os
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 WORDLIST_PATH = os.path.join(SCRIPT_DIR, "words.txt")
-ABBREV_PATH = os.path.join(SCRIPT_DIR, "indicators.yml")
+ABBREV_PATH = os.path.join(SCRIPT_DIR, "abbreviations.json")
 
 def load_wordlist(filepath):
     """Loads the valid wordlist into a fast lookup set."""
@@ -32,25 +32,32 @@ def load_wordlist(filepath):
         exit(1)
 
 def load_abbreviations(filepath):
-    """Loads the common abbreviation lists from our Knowledge Base (origin yaml format)."""
-    abbrev_dict = {}
+    """Loads abbreviations/synonyms from abbreviations.json.
+
+    Returns a mapping of clue-synonym/keyword -> list of abbreviation expansions.
+    Example: {"daughter": ["d"], "ship": ["ss"]}
+    """
     try:
-        import yaml
         with open(filepath, 'r', encoding='utf-8') as f:
-            data = yaml.safe_load(f)
-            # Flatten: map synonym strings to the abbreviation key
-            for abbrev, syns in data.items():
-                if not syns or isinstance(syns, (bool, int, float)): 
-                    continue
-                if isinstance(syns, str): 
-                    syns = [syns]
-                for syn in syns:
-                    if isinstance(syn, str):
-                        abbrev_dict[syn.lower()] = abbrev
-                        
-            return abbrev_dict
+            data = json.load(f)
+
+        abbrev_dict = {}
+        for k, v in (data or {}).items():
+            if not k or not isinstance(k, str):
+                continue
+            if isinstance(v, list):
+                expansions = [x for x in v if isinstance(x, str) and x]
+            elif isinstance(v, str):
+                expansions = [v] if v else []
+            else:
+                expansions = []
+            if expansions:
+                abbrev_dict[k.lower()] = expansions
+        return abbrev_dict
+    except FileNotFoundError:
+        return {}
     except Exception as e:
-        print(f"Error loading YAML dictionary: {e}")
+        print(json.dumps({"error": f"Error loading abbreviations: {e}"}))
         return {}
 
 def filter_by_pattern(word, pattern):
@@ -83,19 +90,32 @@ def solve_insertion(fodder, outer, pattern=None, wordlist_path=WORDLIST_PATH, ab
     clean_outer = clean_string(outer)
     outer_candidates = [clean_outer]
     
-    # We now iterate over the keys to see if our clean string is a substring of the dictionary key
-    # (e.g. 'ship' is in 'steamship' -> 'ss')
-    for k, v in abbreviations_db.items():
-        if clean_outer in k:
-            outer_candidates.append(v)
+    # Expand via abbreviations: if our outer keyword is contained in any key,
+    # include its expansions.
+    def key_matches(clean: str, key: str) -> bool:
+        # Avoid overly-broad substring matches like "i" matching half the database.
+        if not clean:
+            return False
+        if clean == key:
+            return True
+        if clean in key.split():
+            return True
+        # Allow substring matching only for reasonably specific strings.
+        if len(clean) >= 3 and clean in key:
+            return True
+        return False
+
+    for k, expansions in abbreviations_db.items():
+        if key_matches(clean_outer, k):
+            outer_candidates.extend(expansions)
             
     # 2. Expand the FODDER possibilities
     clean_fodder = clean_string(fodder)
     fodder_candidates = [clean_fodder]
     
-    for k, v in abbreviations_db.items():
-        if clean_fodder in k:
-            fodder_candidates.append(v)
+    for k, expansions in abbreviations_db.items():
+        if key_matches(clean_fodder, k):
+            fodder_candidates.extend(expansions)
        
     # If the user passed explicit synonyms (comma separated) instead of a literal, handle that.
     if ',' in fodder:
