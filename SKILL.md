@@ -80,10 +80,12 @@ FOR EACH unsolved clue in clues.yaml:
     Call grid_manager.py --action get_pattern for this clue.
     Record the current pattern (e.g., "S...S").
 
-    STEP 2 — CATEGORIZE
+    STEP 2 — CATEGORIZE & SHORTLIST
     Using your semantic understanding, analyse the clue:
       a) Identify the DEFINITION (the straight meaning, usually at the start or end).
-      b) Identify the WORDPLAY TYPE. Look for indicator words:
+      b) Generate a SHORTLIST of candidate answers for that definition 
+         (as if it were a simple, non-cryptic crossword clue) that fit the current pattern.
+      c) Identify the WORDPLAY TYPE. Look for indicator words:
          - Anagram indicators → use anagram.py
          - Hidden word indicators → use hidden.py
          - Reversal indicators → use reversal.py
@@ -91,7 +93,7 @@ FOR EACH unsolved clue in clues.yaml:
          - Concatenation structure → use charade.py
          - Double definition (two meanings, no wordplay) → use pattern matching
          - If you cannot confidently categorize, note it as "UNCLEAR" and move on.
-      c) Extract the FODDER — the specific letters, words, or components
+      d) Extract the FODDER — the specific letters, words, or components
          that the wordplay operates on.
 
     STEP 3 — SOLVE
@@ -100,10 +102,10 @@ FOR EACH unsolved clue in clues.yaml:
     - If the tool returns 0 candidates, move on — do not guess.
     - If the tool returns candidates, proceed to STEP 4.
 
-    STEP 4 — EVALUATE
-    For each candidate returned by the tool:
-      a) Does it semantically match the DEFINITION you identified?
-      b) Does it fit the pattern constraints?
+    STEP 4 — EVALUATE (Confirm with Shortlist)
+    For each candidate returned by the deterministic tool:
+      a) Is this candidate in the semantic SHORTLIST you generated in Step 2b?
+      b) If not, does it otherwise strongly semantically match the DEFINITION?
       c) Is it a real, common English word appropriate for a crossword?
     If exactly ONE candidate passes all checks with high confidence, proceed to STEP 5.
     If multiple candidates pass, note them and move on (do not commit uncertain answers).
@@ -144,8 +146,8 @@ Wait for user guidance before continuing.
 If asked to solve **19-Across: Glides using paddle on board ship (5)**:
 
 1. **Constrain:** Call `grid_manager.py` for 19A → returns `.....`
-2. **Categorize:** "Glides" is the definition. "using paddle" is the fodder (`paddle` or synonym `oar`). "on board ship" is an insertion indicator — something goes inside `ship`.
+2. **Categorize & Shortlist:** "Glides" is the definition. Brainstorm synonyms strictly fitting 5 letters: SOARS, SKIMS, SLIPS. "using paddle" is the fodder (`paddle` or synonym `oar`). "on board ship" is an insertion indicator — something goes inside `ship`.
 3. **Solve:** `python cryptic_skills/insertion.py --fodder "paddle,oar" --outer "ship" --pattern "....."`
-4. **Evaluate:** Tool returns `["SOARS"]`. Does "SOARS" mean "Glides"? Yes.
+4. **Evaluate:** Tool returns `["SOARS"]`. Is "SOARS" in the shortlist? Yes.
 5. **Commit:** `python cryptic_skills/grid_manager.py --action place_answer --clue 19A --answer SOARS`
-6. **Log:** ✅ 19A: SOARS — "oar" inside "SS" (ship), definition = "Glides"
+6. **Log:** ✅ 19A: SOARS — "oar" inside "SS" (ship), confirmed in semantic shortlist for "Glides"
