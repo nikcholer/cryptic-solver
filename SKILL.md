@@ -1,7 +1,7 @@
 ---
 name: cryptic-crossword-solver
 description: A neuro-symbolic framework for solving cryptic crosswords by delegating deterministic wordplay to algorithmic Python tools.
-metadata: {"version": "2.0", "author": "Antigravity", "tags": ["games", "crosswords", "algorithmic"]}
+metadata: {"version": "2.1", "author": "Antigravity", "tags": ["games", "crosswords", "algorithmic"]}
 ---
 
 # Cryptic Crossword Solver
@@ -15,6 +15,7 @@ Cryptic clues are notoriously difficult for linguistic models to solve purely in
 1. **Never guess final answers purely from memory.** You must always use the Python tools to validate candidates against the provided `words.txt` dictionary and grid constraints.
 2. **You are autonomous.** On each invocation, you run through ALL unsolved clues systematically. You do not stop after one clue and ask what to do next.
 3. **Track your work.** For each clue you analyse, output your reasoning: what type you think it is, what fodder/definition you identified, what tool you called, what candidates came back, and whether you committed an answer or skipped.
+4. **Definition shortlist is advisory; wordplay is mandatory for committing.** A candidate must satisfy both definition-fit and wordplay-mechanics (via tools) before you place it in the grid.
 
 ## Available Python Tools
 
@@ -88,8 +89,8 @@ FOR EACH unsolved clue in clues.yaml:
          - If you are stuck, the pattern is very open (few checkers), or you need breadth: spawn a lightweight sub-agent for shortlist generation using **GPT‑5 mini** (`model: "gpt-mini"`).
            - Prefer **one clue per sub-agent call**.
            - Prompt style (definition): `Give me all reasonable suggestions for this simple crossword clue: "<definition> <enum>". Pattern: <pattern>. Return ONLY a plain newline-separated list of candidate answers; no explanation.`
-           - If the DEFINITION is a **manageable closed set** (e.g., "European capital", "London borough", "US state"), ask for **high recall**: `Give me all reasonable suggestions for: "<category> <enum>" ...` and filter locally by pattern/length.
-           - If the DEFINITION implies a **huge open set** (e.g., "river", "mountain", "city"), qualify it to keep the list useful (e.g., "major rivers", "famous rivers", "rivers used in a national newspaper crossword").
+           - If the DEFINITION is a **manageable closed set** (e.g., "European capital", "London borough", "US state"), ask for **high recall** and filter locally by pattern/length.
+           - If the DEFINITION implies a **huge open set** (e.g., "river", "mountain", "city"), qualify it to keep the list useful (e.g., "major/famous ...", "used in a national newspaper crossword").
            - Treat this as candidate generation only; you still must confirm via wordplay + deterministic tools before committing.
       c) Identify the WORDPLAY TYPE. Look for indicator words:
          - Anagram indicators → use anagram.py
@@ -102,7 +103,7 @@ FOR EACH unsolved clue in clues.yaml:
       d) Extract the FODDER — the specific letters, words, or components
          that the wordplay operates on.
 
-    STEP 3 — SOLVE
+    STEP 3 — SOLVE (WORDPLAY)
     Call the appropriate Python tool with the extracted fodder and current pattern.
     - If multiple interpretations are plausible, try each one.
     - If the tool returns 0 candidates, move on — do not guess.
@@ -118,12 +119,10 @@ FOR EACH unsolved clue in clues.yaml:
 
     IMPORTANT:
     - Tools are *generators*. They may return multiple mechanically-valid substrings/anagrams.
-    - The managing agent is responsible for choosing the best candidate using semantic
-      definition-fit and overall clue plausibility.
+    - Do not treat tool output as auto-valid; you still must do semantic ranking + parse validation.
 
-    Proceed to STEP 5 when there is exactly ONE clear best candidate with high confidence.
-    If multiple plausible candidates remain, note them and move on.
-    If zero candidates pass, move on.
+    Proceed to STEP 5 only when there is exactly ONE clear best candidate with high confidence.
+    If multiple candidates remain plausible, record them and move on (do not commit uncertain answers).
 
     STEP 5 — COMMIT
     Call grid_manager.py --action place_answer to commit the answer.
