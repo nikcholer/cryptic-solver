@@ -1,7 +1,7 @@
 ---
 name: cryptic-crossword-solver
 description: A neuro-symbolic framework for solving cryptic crosswords by delegating deterministic wordplay to algorithmic Python tools.
-metadata: {"version": "2.2", "author": "Antigravity", "tags": ["games", "crosswords", "algorithmic"]}
+metadata: {"version": "2.3", "author": "Antigravity", "tags": ["games", "crosswords", "algorithmic"]}
 ---
 
 # Cryptic Crossword Solver
@@ -60,15 +60,19 @@ Solves clues built by sticking parts together sequentially (e.g., a word + an ab
 
 If the puzzle workspace does not yet contain `clues.yaml` and `grid_state.json`, create them.
 
-**If the input is a PDF:** first render it to high-DPI PNGs (PDFs are often hard for vision/OCR).
+**If the input is a PDF:** optionally render it to high-DPI PNGs (PDFs are often hard for vision/OCR).
 - Run: `python cryptic_skills/preprocess_pdf.py --pdf <path/to/puzzle.pdf> --outdir <workspace_dir> --dpi 450`
 - Then proceed using the produced `page-1.png` etc.
 
+**If you have a grid-only image** (recommended), generate `grid_state.json` deterministically:
+- Provide a cropped grid image (e.g. `grid_only.png`), then run:
+  `python cryptic_skills/extract_grid_state_from_image.py --image <workspace_dir>/grid_only.png --out <workspace_dir>/grid_state.json`
+
 Then:
 
-1. **Map the Grid:** Use your visual understanding to map the 2D grid — calculate the `x, y` starting coordinates, `length`, and `direction` of every numbered clue.
+1. **Map the Grid:** If `grid_state.json` does not exist, use your visual understanding to map the 2D grid — calculate the `x, y` starting coordinates, `length`, and `direction` of every numbered clue.
 2. **Extract Clues:** Parse the clue texts into a structured `clues.yaml` file. Save to the workspace directory.
-3. **Initialize Grid State:** Create a blank `grid_state.json` containing the spatial coordinates. Save to the workspace directory.
+3. **Initialize Grid State:** If needed, create a blank `grid_state.json` containing the spatial coordinates. Save to the workspace directory.
 
 *Do NOT write state files into the `cryptic_skills/` template directory.*
 
