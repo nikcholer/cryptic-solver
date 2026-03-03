@@ -1,7 +1,7 @@
 ---
 name: cryptic-crossword-solver
 description: A neuro-symbolic framework for solving cryptic crosswords by delegating deterministic wordplay to algorithmic Python tools.
-metadata: {"version": "2.3", "author": "Antigravity", "tags": ["games", "crosswords", "algorithmic"]}
+metadata: {"version": "2.4", "author": "Antigravity", "tags": ["games", "crosswords", "algorithmic"]}
 ---
 
 # Cryptic Crossword Solver
@@ -123,9 +123,13 @@ FOR EACH unsolved clue in clues.yaml:
     For each candidate returned by the tool, the managing agent MUST act as the ranker:
       a) Does it semantically match the DEFINITION you identified? (Primary.)
          - Prefer candidates that appear in the semantic SHORTLIST from Step 2b.
-      b) Does it fit the pattern constraints? (Hard constraint.)
-      c) Is it a real, common English word appropriate for a crossword?
-      d) Does the wordplay justify it — including accounting for **every letter** in the answer?
+      b) **Definition agreement check (do not skip):** does the candidate match the definition’s
+         **part of speech** and **number/tense** where implied by the surface?
+         - e.g. definition "Reports" (verb) prefers "DESCRIBES" over "DESCRIBER".
+         - e.g. definition "Vagrants" (plural noun) prefers a plural noun.
+      c) Does it fit the pattern constraints? (Hard constraint.)
+      d) Is it a real, common English word appropriate for a crossword?
+      e) Does the wordplay justify it — including accounting for **every letter** in the answer?
 
     IMPORTANT:
     - Tools are *generators*. They may return multiple mechanically-valid substrings/anagrams.
