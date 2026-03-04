@@ -16,6 +16,7 @@ Cryptic clues are notoriously difficult for linguistic models to solve purely in
 2. **You are autonomous.** On each invocation, you run through ALL unsolved clues systematically. You do not stop after one clue and ask what to do next.
 3. **Track your work.** For each clue you analyse, output your reasoning: what type you think it is, what fodder/definition you identified, what tool you called, what candidates came back, and whether you committed an answer or skipped.
 4. **Definition shortlist is advisory; wordplay is mandatory for committing.** A candidate must satisfy both definition-fit and wordplay-mechanics (via tools) before you place it in the grid.
+5. **Account for every letter before you COMMIT.** Your parse must explain the *entire* answer string. If you can’t account for a letter, do **not** place the answer yet — mark it `PENDING` and re-check the clue for missing mechanisms (e.g., single-letter abbreviations like **O = over** in cricket, regular-letter selection, deletions, etc.).
 
 ## Available Python Tools
 
@@ -53,6 +54,23 @@ Solves clues built by sticking parts together sequentially (e.g., a word + an ab
 ---
 
 ## The Execution Loop
+
+### Progress Tracking (Required for iterative skill development)
+In the *puzzle workspace directory* (the dedicated folder for this crossword), maintain two progress artifacts alongside the grid state:
+
+1) `progress.md` (narrative log)
+- Append-only log of what you tried and why.
+- Each entry should include: clue id, clue text, enumeration, current pattern, suspected definition, suspected wordplay type, tool(s) run, shortlist, and the final decision (`COMMITTED`, `PENDING`, `RETRACTED`).
+- When you place an answer, include the placed answer and a brief parse.
+
+2) `progress.jsonl` (machine-readable per-clue status)
+- One JSON object per clue (one line per clue), updated in-place as the clue’s status changes.
+- Fields (match existing files if present):
+  - `id`, `direction`, `enum`, `pattern`, `clue`, `status`, optional `answer`
+- For `status: COMMITTED`, set `pattern` to the filled answer (uppercase), not dots.
+- Update `pattern` for unsolved clues as new checkers appear.
+
+These files are developer telemetry to spot habits quickly; `grid_state.json` remains the source of truth.
 
 **This is your main operating procedure.** When invoked, follow these steps in order.
 
