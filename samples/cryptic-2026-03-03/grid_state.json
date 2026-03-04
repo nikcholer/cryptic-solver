@@ -1,0 +1,307 @@
+{
+  "_debug": {
+    "hlines": [
+      8,
+      56,
+      99,
+      161,
+      205,
+      266,
+      310,
+      371,
+      415,
+      476,
+      519,
+      581,
+      625,
+      686,
+      730,
+      778
+    ],
+    "image": "/home/nik/.openclaw/workspace/projects/cryptic-2026-03-03/grid_only.png",
+    "image_size": [
+      789,
+      786
+    ],
+    "vlines": [
+      7,
+      59,
+      102,
+      164,
+      207,
+      269,
+      312,
+      374,
+      418,
+      479,
+      523,
+      584,
+      628,
+      690,
+      733,
+      787
+    ]
+  },
+  "clues": {
+    "10A": {
+      "direction": "Across",
+      "length": 7,
+      "uncertain": true,
+      "x": 8,
+      "y": 2
+    },
+    "11A": {
+      "direction": "Across",
+      "length": 9,
+      "uncertain": true,
+      "x": 0,
+      "y": 4
+    },
+    "12A": {
+      "direction": "Across",
+      "length": 5,
+      "uncertain": true,
+      "x": 10,
+      "y": 4
+    },
+    "13A": {
+      "direction": "Across",
+      "length": 5,
+      "uncertain": true,
+      "x": 0,
+      "y": 6
+    },
+    "14D": {
+      "direction": "Down",
+      "length": 9,
+      "uncertain": true,
+      "x": 4,
+      "y": 6
+    },
+    "15A": {
+      "direction": "Across",
+      "length": 9,
+      "uncertain": true,
+      "x": 6,
+      "y": 6
+    },
+    "16D": {
+      "direction": "Down",
+      "length": 9,
+      "uncertain": true,
+      "x": 8,
+      "y": 6
+    },
+    "17A": {
+      "direction": "Across",
+      "length": 9,
+      "uncertain": true,
+      "x": 0,
+      "y": 8
+    },
+    "17D": {
+      "direction": "Down",
+      "length": 7,
+      "uncertain": true,
+      "x": 0,
+      "y": 8
+    },
+    "18D": {
+      "direction": "Down",
+      "length": 7,
+      "uncertain": true,
+      "x": 2,
+      "y": 8
+    },
+    "19A": {
+      "direction": "Across",
+      "length": 5,
+      "uncertain": true,
+      "x": 10,
+      "y": 8
+    },
+    "1A": {
+      "direction": "Across",
+      "length": 7,
+      "uncertain": true,
+      "x": 0,
+      "y": 0
+    },
+    "1D": {
+      "direction": "Down",
+      "length": 7,
+      "uncertain": true,
+      "x": 0,
+      "y": 0
+    },
+    "20D": {
+      "direction": "Down",
+      "length": 7,
+      "uncertain": true,
+      "x": 12,
+      "y": 8
+    },
+    "21D": {
+      "direction": "Down",
+      "length": 7,
+      "uncertain": true,
+      "x": 14,
+      "y": 8
+    },
+    "22A": {
+      "direction": "Across",
+      "length": 5,
+      "uncertain": true,
+      "x": 0,
+      "y": 10
+    },
+    "23A": {
+      "direction": "Across",
+      "length": 9,
+      "uncertain": true,
+      "x": 6,
+      "y": 10
+    },
+    "23D": {
+      "direction": "Down",
+      "length": 5,
+      "uncertain": true,
+      "x": 6,
+      "y": 10
+    },
+    "24D": {
+      "direction": "Down",
+      "length": 5,
+      "uncertain": true,
+      "x": 10,
+      "y": 10
+    },
+    "25A": {
+      "direction": "Across",
+      "length": 7,
+      "uncertain": true,
+      "x": 0,
+      "y": 12
+    },
+    "26A": {
+      "direction": "Across",
+      "length": 7,
+      "uncertain": true,
+      "x": 8,
+      "y": 12
+    },
+    "27A": {
+      "direction": "Across",
+      "length": 7,
+      "uncertain": true,
+      "x": 0,
+      "y": 14
+    },
+    "28A": {
+      "direction": "Across",
+      "length": 7,
+      "uncertain": true,
+      "x": 8,
+      "y": 14
+    },
+    "2D": {
+      "direction": "Down",
+      "length": 7,
+      "uncertain": true,
+      "x": 2,
+      "y": 0
+    },
+    "3D": {
+      "direction": "Down",
+      "length": 5,
+      "uncertain": true,
+      "x": 4,
+      "y": 0
+    },
+    "4D": {
+      "direction": "Down",
+      "length": 9,
+      "uncertain": true,
+      "x": 6,
+      "y": 0
+    },
+    "5A": {
+      "direction": "Across",
+      "length": 7,
+      "uncertain": true,
+      "x": 8,
+      "y": 0
+    },
+    "5D": {
+      "direction": "Down",
+      "length": 5,
+      "uncertain": true,
+      "x": 8,
+      "y": 0
+    },
+    "6D": {
+      "direction": "Down",
+      "length": 9,
+      "uncertain": true,
+      "x": 10,
+      "y": 0
+    },
+    "7D": {
+      "direction": "Down",
+      "length": 7,
+      "uncertain": true,
+      "x": 12,
+      "y": 0
+    },
+    "8D": {
+      "direction": "Down",
+      "length": 7,
+      "uncertain": true,
+      "x": 14,
+      "y": 0
+    },
+    "9A": {
+      "direction": "Across",
+      "length": 7,
+      "uncertain": true,
+      "x": 0,
+      "y": 2
+    }
+  },
+  "height": 15,
+  "placed_answers": {
+    "10A": "EXPLAIN",
+    "11A": "DESCRIBES",
+    "12A": "RIFLE",
+    "13A": "ROSES",
+    "15A": "INSTANCES",
+    "16D": "SATISFIED",
+    "17A": "LIKEASHOT",
+    "18D": "KIPPERS",
+    "19A": "TROTS",
+    "1A": "SUPPOSE",
+    "1D": "SLENDER",
+    "20D": "OUTLINE",
+    "21D": "SADNESS",
+    "23A": "HESITATED",
+    "23D": "HEEDS",
+    "24D": "TEALS",
+    "26A": "IMAGINE",
+    "27A": "SISTERS",
+    "28A": "DOSSERS",
+    "2D": "PLEASES",
+    "3D": "ONAIR",
+    "4D": "ESTABLISH",
+    "5D": "SHEDS",
+    "6D": "IMPORTANT",
+    "7D": "TRAFFIC",
+    "8D": "DANGERS",
+    "9A": "ELEGANT",
+    "5A": "SHIFTED",
+    "14D": "STAIRCASE",
+    "22A": "SUPER",
+    "25A": "OPERATE",
+    "17D": "LESSONS"
+  },
+  "width": 15
+}

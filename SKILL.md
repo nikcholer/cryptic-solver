@@ -1,7 +1,7 @@
 ---
 name: cryptic-crossword-solver
 description: A neuro-symbolic framework for solving cryptic crosswords by delegating deterministic wordplay to algorithmic Python tools.
-metadata: {"version": "2.0", "author": "Antigravity", "tags": ["games", "crosswords", "algorithmic"]}
+metadata: {"version": "2.4", "author": "Antigravity", "tags": ["games", "crosswords", "algorithmic"]}
 ---
 
 # Cryptic Crossword Solver
@@ -15,6 +15,8 @@ Cryptic clues are notoriously difficult for linguistic models to solve purely in
 1. **Never guess final answers purely from memory.** You must always use the Python tools to validate candidates against the provided `words.txt` dictionary and grid constraints.
 2. **You are autonomous.** On each invocation, you run through ALL unsolved clues systematically. You do not stop after one clue and ask what to do next.
 3. **Track your work.** For each clue you analyse, output your reasoning: what type you think it is, what fodder/definition you identified, what tool you called, what candidates came back, and whether you committed an answer or skipped.
+4. **Definition shortlist is advisory; wordplay is mandatory for committing.** A candidate must satisfy both definition-fit and wordplay-mechanics (via tools) before you place it in the grid.
+5. **Account for every letter before you COMMIT.** Your parse must explain the *entire* answer string. If you can’t account for a letter, do **not** place the answer yet — mark it `PENDING` and re-check the clue for missing mechanisms (e.g., single-letter abbreviations like **O = over** in cricket, regular-letter selection, deletions, etc.).
 
 ## Available Python Tools
 
@@ -53,15 +55,42 @@ Solves clues built by sticking parts together sequentially (e.g., a word + an ab
 
 ## The Execution Loop
 
+### Progress Tracking (Required for iterative skill development)
+In the *puzzle workspace directory* (the dedicated folder for this crossword), maintain two progress artifacts alongside the grid state:
+
+1) `progress.md` (narrative log)
+- Append-only log of what you tried and why.
+- Each entry should include: clue id, clue text, enumeration, current pattern, suspected definition, suspected wordplay type, tool(s) run, shortlist, and the final decision (`COMMITTED`, `PENDING`, `RETRACTED`).
+- When you place an answer, include the placed answer and a brief parse.
+
+2) `progress.jsonl` (machine-readable per-clue status)
+- One JSON object per clue (one line per clue), updated in-place as the clue’s status changes.
+- Fields (match existing files if present):
+  - `id`, `direction`, `enum`, `pattern`, `clue`, `status`, optional `answer`
+- For `status: COMMITTED`, set `pattern` to the filled answer (uppercase), not dots.
+- Update `pattern` for unsolved clues as new checkers appear.
+
+These files are developer telemetry to spot habits quickly; `grid_state.json` remains the source of truth.
+
 **This is your main operating procedure.** When invoked, follow these steps in order.
 
 ### Phase 1: Initialization
 
-If the puzzle workspace does not yet contain `clues.yaml` and `grid_state.json`, create them:
+If the puzzle workspace does not yet contain `clues.yaml` and `grid_state.json`, create them.
 
-1. **Map the Grid:** If given an image or PDF, use your visual understanding to map the 2D grid — calculate the `x, y` starting coordinates, `length`, and `direction` of every numbered clue.
+**If the input is a PDF:** optionally render it to high-DPI PNGs (PDFs are often hard for vision/OCR).
+- Run: `python cryptic_skills/preprocess_pdf.py --pdf <path/to/puzzle.pdf> --outdir <workspace_dir> --dpi 450`
+- Then proceed using the produced `page-1.png` etc.
+
+**If you have a grid-only image** (recommended), generate `grid_state.json` deterministically:
+- Provide a cropped grid image (e.g. `grid_only.png`), then run:
+  `python cryptic_skills/extract_grid_state_from_image.py --image <workspace_dir>/grid_only.png --out <workspace_dir>/grid_state.json`
+
+Then:
+
+1. **Map the Grid:** If `grid_state.json` does not exist, use your visual understanding to map the 2D grid — calculate the `x, y` starting coordinates, `length`, and `direction` of every numbered clue.
 2. **Extract Clues:** Parse the clue texts into a structured `clues.yaml` file. Save to the workspace directory.
-3. **Initialize Grid State:** Create a blank `grid_state.json` containing the spatial coordinates. Save to the workspace directory.
+3. **Initialize Grid State:** If needed, create a blank `grid_state.json` containing the spatial coordinates. Save to the workspace directory.
 
 *Do NOT write state files into the `cryptic_skills/` template directory.*
 
@@ -88,8 +117,8 @@ FOR EACH unsolved clue in clues.yaml:
          - If you are stuck, the pattern is very open (few checkers), or you need breadth: spawn a lightweight sub-agent for shortlist generation using **GPT‑5 mini** (`model: "gpt-mini"`).
            - Prefer **one clue per sub-agent call**.
            - Prompt style (definition): `Give me all reasonable suggestions for this simple crossword clue: "<definition> <enum>". Pattern: <pattern>. Return ONLY a plain newline-separated list of candidate answers; no explanation.`
-           - If the DEFINITION is a **manageable closed set** (e.g., "European capital", "London borough", "US state"), ask for **high recall**: `Give me all reasonable suggestions for: "<category> <enum>" ...` and filter locally by pattern/length.
-           - If the DEFINITION implies a **huge open set** (e.g., "river", "mountain", "city"), qualify it to keep the list useful (e.g., "major rivers", "famous rivers", "rivers used in a national newspaper crossword").
+           - If the DEFINITION is a **manageable closed set** (e.g., "European capital", "London borough", "US state"), ask for **high recall** and filter locally by pattern/length.
+           - If the DEFINITION implies a **huge open set** (e.g., "river", "mountain", "city"), qualify it to keep the list useful (e.g., "major/famous ...", "used in a national newspaper crossword").
            - Treat this as candidate generation only; you still must confirm via wordplay + deterministic tools before committing.
       c) Identify the WORDPLAY TYPE. Look for indicator words:
          - Anagram indicators → use anagram.py
@@ -102,20 +131,30 @@ FOR EACH unsolved clue in clues.yaml:
       d) Extract the FODDER — the specific letters, words, or components
          that the wordplay operates on.
 
-    STEP 3 — SOLVE
+    STEP 3 — SOLVE (WORDPLAY)
     Call the appropriate Python tool with the extracted fodder and current pattern.
     - If multiple interpretations are plausible, try each one.
     - If the tool returns 0 candidates, move on — do not guess.
     - If the tool returns candidates, proceed to STEP 4.
 
-    STEP 4 — EVALUATE (Confirm with Shortlist)
-    For each candidate returned by the deterministic tool:
-      a) Is this candidate in the semantic SHORTLIST you generated in Step 2b?
-      b) If not, does it otherwise strongly semantically match the DEFINITION?
-      c) Is it a real, common English word appropriate for a crossword?
-    If exactly ONE candidate passes all checks with high confidence, proceed to STEP 5.
-    If multiple candidates pass, note them and move on (do not commit uncertain answers).
-    If zero candidates pass, move on.
+    STEP 4 — EVALUATE (MANAGING AGENT RESPONSIBILITY)
+    For each candidate returned by the tool, the managing agent MUST act as the ranker:
+      a) Does it semantically match the DEFINITION you identified? (Primary.)
+         - Prefer candidates that appear in the semantic SHORTLIST from Step 2b.
+      b) **Definition agreement check (do not skip):** does the candidate match the definition’s
+         **part of speech** and **number/tense** where implied by the surface?
+         - e.g. definition "Reports" (verb) prefers "DESCRIBES" over "DESCRIBER".
+         - e.g. definition "Vagrants" (plural noun) prefers a plural noun.
+      c) Does it fit the pattern constraints? (Hard constraint.)
+      d) Is it a real, common English word appropriate for a crossword?
+      e) Does the wordplay justify it — including accounting for **every letter** in the answer?
+
+    IMPORTANT:
+    - Tools are *generators*. They may return multiple mechanically-valid substrings/anagrams.
+    - Do not treat tool output as auto-valid; you still must do semantic ranking + parse validation.
+
+    Proceed to STEP 5 only when there is exactly ONE clear best candidate with high confidence.
+    If multiple candidates remain plausible, record them and move on (do not commit uncertain answers).
 
     STEP 5 — COMMIT
     Call grid_manager.py --action place_answer to commit the answer.
