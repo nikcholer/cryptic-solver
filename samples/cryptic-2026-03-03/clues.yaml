@@ -1,0 +1,98 @@
+across:
+  1A:
+    clue: "Assume nothing succeeded in unfinished meal"
+    enum: "(7)"
+  5A:
+    clue: "Undergarment Edward adjusted"
+    enum: "(7)"
+  9A:
+    clue: "Graceful adult hugged by gentle drunk"
+    enum: "(7)"
+  10A:
+    clue: "Clear up old tract of open land"
+    enum: "(7)"
+  11A:
+    clue: "Reports from half of rude authors"
+    enum: "(9)"
+  12A:
+    clue: "Student found in widespread search"
+    enum: "(5)"
+  13A:
+    clue: "Wines lifted spirits initially"
+    enum: "(5)"
+  15A:
+    clue: "Makes reference to hip positions"
+    enum: "(9)"
+  17A:
+    clue: "Immediately get a kick from a gun discharge"
+    enum: "(4,1,4)"
+  19A:
+    clue: "Radical left-wingers run scared at first"
+    enum: "(5)"
+  22A:
+    clue: "Drink beer regularly? Wicked!"
+    enum: "(5)"
+  23A:
+    clue: "His Excellency expounded about one's getting delayed"
+    enum: "(9)"
+  25A:
+    clue: "Run over and peer at cuckoo"
+    enum: "(7)"
+  26A:
+    clue: "Fancy picture frames I note"
+    enum: "(7)"
+  27A:
+    clue: "Son is brusque, dismissing conclusion of the relatives"
+    enum: "(7)"
+  28A:
+    clue: "Vagrants dress so badly"
+    enum: "(7)"
+down:
+  1D:
+    clue: "Faint line dividing poster"
+    enum: "(7)"
+  2D:
+    clue: "Requests by European to put on small suits"
+    enum: "(7)"
+  3D:
+    clue: "Live in Barcelona irregularly"
+    enum: "(2,3)"
+  4D:
+    clue: "Prove his table's wobbly"
+    enum: "(9)"
+  5D:
+    clue: "The woman's clothing daughter removes"
+    enum: "(5)"
+  6D:
+    clue: "Significant ship in a series of books"
+    enum: "(9)"
+  7D:
+    clue: "Buying and selling vehicles"
+    enum: "(7)"
+  8D:
+    clue: "Threats from last of bed bugs"
+    enum: "(7)"
+  14D:
+    clue: "American enthralled by scariest bats in flight"
+    enum: "(9)"
+  16D:
+    clue: "Fulfilled sad fetish I arranged without husband"
+    enum: "(9)"
+  17D:
+    clue: "To a smaller extent, head of state supports working classes"
+    enum: "(7)"
+  18D:
+    clue: "Fish – these could be in the sack"
+    enum: "(7)"
+  20D:
+    clue: "Silhouette revealed crow's foot"
+    enum: "(7)"
+  21D:
+    clue: "Some scientists send a spaceship up in regret"
+    enum: "(7)"
+  23D:
+    clue: "Pays attention to what upset editor – story's beginning"
+    enum: "(5)"
+  24D:
+    clue: "Guy almost captures 50 ducks"
+    enum: "(5)"
