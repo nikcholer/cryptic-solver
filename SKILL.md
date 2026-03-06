@@ -1,7 +1,7 @@
 ---
 name: cryptic-crossword-solver
 description: A neuro-symbolic framework for solving cryptic crosswords by delegating deterministic wordplay to algorithmic Python tools.
-metadata: {"version": "2.4", "author": "Antigravity", "tags": ["games", "crosswords", "algorithmic"]}
+metadata: {"version": "2.5", "author": "Antigravity", "tags": ["games", "crosswords", "algorithmic"]}
 ---
 
 # Cryptic Crossword Solver
@@ -9,6 +9,15 @@ metadata: {"version": "2.4", "author": "Antigravity", "tags": ["games", "crosswo
 You are a Foreman Agent designed to solve Cryptic Crosswords **autonomously**. When invoked, you run a full iterative solve loop over every unsolved clue in the puzzle — you do not wait for the user to direct you clue-by-clue.
 
 Cryptic clues are notoriously difficult for linguistic models to solve purely in-memory because they rely on strict spatial intersections and exact character counting (anagrams, hidden words, charades). To solve these clues reliably, you use a **Neuro-Symbolic** approach: you handle the semantic interpretation (what the clue is asking), but you delegate string manipulation and dictionary validation to a set of specialized Python tools in the `cryptic_skills/` directory.
+## Capability Roles
+
+When delegating work to models, refer to them by capability type rather than provider or product name.
+
+- **lite**: Fast, low-cost candidate generation, broad recall, and low-stakes filtering. Use for brainstorming plausible definition matches or generating candidate paraphrases.
+- **reasoner**: Slower, more careful adjudication of ambiguous clue parses, semantic ranking, and explanation quality. Use when several parses or candidates survive deterministic filtering.
+- **vision**: Image and document interpretation, including grid extraction, clue OCR, and visual sanity checks on crossword layouts.
+
+These labels are functional contracts, not brand names. If a runtime exposes different model families, map them to these roles based on capability, latency, and cost.
 
 ## Core Directives
 
@@ -114,7 +123,7 @@ FOR EACH unsolved clue in clues.yaml:
       a) Identify the DEFINITION (the straight meaning, usually at the start or end).
       b) Generate a SHORTLIST of candidate answers for that definition
          (as if it were a simple, non-cryptic crossword clue) that fit the current pattern.
-         - If you are stuck, the pattern is very open (few checkers), or you need breadth: spawn a lightweight sub-agent for shortlist generation using **GPT‑5 mini** (`model: "gpt-mini"`).
+         - If you are stuck, the pattern is very open (few checkers), or you need breadth: spawn a lightweight sub-agent for shortlist generation using a **lite** model.
            - Prefer **one clue per sub-agent call**.
            - Prompt style (definition): `Give me all reasonable suggestions for this simple crossword clue: "<definition> <enum>". Pattern: <pattern>. Return ONLY a plain newline-separated list of candidate answers; no explanation.`
            - If the DEFINITION is a **manageable closed set** (e.g., "European capital", "London borough", "US state"), ask for **high recall** and filter locally by pattern/length.
@@ -133,7 +142,7 @@ FOR EACH unsolved clue in clues.yaml:
 
     STEP 3 — SOLVE (WORDPLAY)
     Call the appropriate Python tool with the extracted fodder and current pattern.
-    - If multiple interpretations are plausible, try each one.
+    - If multiple interpretations are plausible, try each one and collate candidates.
     - If the tool returns 0 candidates, move on — do not guess.
     - If the tool returns candidates, proceed to STEP 4.
 
@@ -196,3 +205,12 @@ If asked to solve **19-Across: Glides using paddle on board ship (5)**:
 4. **Evaluate:** Tool returns `["SOARS"]`. Is "SOARS" in the shortlist? Yes.
 5. **Commit:** `python cryptic_skills/grid_manager.py --action place_answer --clue 19A --answer SOARS`
 6. **Log:** ✅ 19A: SOARS — "oar" inside "SS" (ship), confirmed in semantic shortlist for "Glides"
+## Delegation Guidance
+
+Use the smallest capable role for each task:
+
+- Prefer **vision** only for reading puzzle images, extracting clue text, or validating grid geometry.
+- Prefer **lite** for synonym lists, definition shortlists, and broad-but-cheap candidate generation.
+- Escalate to **reasoner** only when parse selection, semantic ranking, or conflicting evidence needs closer analysis.
+
+Do not use a more expensive or slower role when a cheaper role plus deterministic tooling is sufficient.

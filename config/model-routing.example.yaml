@@ -1,0 +1,51 @@
+version: 1
+
+# This file is deployment-facing, not skill-facing.
+# The skill asks for capability roles such as lite/reasoner/vision.
+# The deployment maps those roles to local aliases, and the calling agent
+# resolves aliases to concrete model IDs, credentials, endpoints, and policies.
+
+capability_roles:
+  lite:
+    alias: crossword-lite
+    fallback_aliases:
+      - general-lite
+      - default-text
+  reasoner:
+    alias: crossword-reasoner
+    fallback_aliases:
+      - general-reasoner
+      - default-strong
+  vision:
+    alias: crossword-vision
+    fallback_aliases:
+      - general-vision
+
+policies:
+  allow_reasoner_for_lite: true
+  allow_text_only_without_vision: true
+  require_explicit_failure_if_role_missing: true
+
+role_expectations:
+  lite:
+    strengths:
+      - cheap shortlist generation
+      - broad candidate recall
+      - low-stakes filtering
+    avoid_for:
+      - final adjudication between ambiguous parses
+      - expensive multi-step reasoning
+  reasoner:
+    strengths:
+      - parse comparison
+      - semantic ranking
+      - ambiguity resolution
+    avoid_for:
+      - bulk cheap candidate generation
+  vision:
+    strengths:
+      - OCR
+      - image understanding
+      - grid-layout extraction
+    avoid_for:
+      - pure text-only tasks when no image is involved

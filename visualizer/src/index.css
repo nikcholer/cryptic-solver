@@ -1,0 +1,418 @@
+/* Modern Premium Dark Theme CSS variables */
+:root {
+  --bg-primary: #0f172a;
+  /* Slate-900 */
+  --bg-secondary: #1e293b;
+  /* Slate-800 */
+  --bg-tertiary: #334155;
+  /* Slate-700 */
+  --text-primary: #f8fafc;
+  /* Slate-50 */
+  --text-secondary: #94a3b8;
+  /* Slate-400 */
+  --accent-color: #3b82f6;
+  /* Blue-500 */
+  --accent-glow: rgba(59, 130, 246, 0.4);
+  --success-color: #22c55e;
+
+  --cell-size: 38px;
+  --cell-bg-white: #ffffff;
+  --cell-bg-black: #000000;
+  --cell-text: #0f172a;
+  --cell-active-bg: #bfdbfe;
+  /* Blue-200 */
+
+  --border-radius-lg: 12px;
+  --border-radius-md: 8px;
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+/* App Layout */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 2rem;
+  box-sizing: border-box;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.app-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.app-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  background: linear-gradient(to right, #60a5fa, #3b82f6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.app-header p {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  margin-top: 0.5rem;
+}
+
+.main-content {
+  display: flex;
+  gap: 3rem;
+  flex: 1;
+  min-height: 0;
+  /* allows children to scroll */
+}
+
+.left-panel {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: center;
+}
+
+.right-panel {
+  flex: 1;
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-lg);
+  padding: 1.5rem;
+  overflow-y: auto;
+  border: 1px solid var(--bg-tertiary);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Crossword Grid */
+.grid-container {
+  padding: 1.5rem;
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--bg-tertiary);
+}
+
+.crossword-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-cols), var(--cell-size));
+  grid-template-rows: repeat(var(--grid-rows), var(--cell-size));
+  background-color: var(--bg-tertiary);
+  /* cell borders */
+  gap: 1px;
+  border: 4px solid var(--bg-tertiary);
+}
+
+.crossword-cell {
+  background-color: var(--cell-bg-white);
+  color: var(--cell-text);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  transition: background-color var(--transition-fast);
+}
+
+.crossword-cell.active {
+  background-color: var(--cell-active-bg);
+}
+
+.crossword-cell .clue-number {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: #475569;
+}
+
+.crossword-cell .cell-letter {
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Base black cell style overrides */
+.crossword-cell.black-cell {
+  background-color: var(--cell-bg-black);
+}
+
+/* Timeline Controls */
+.timeline-controls {
+  width: 100%;
+  max-width: 600px;
+  background-color: var(--bg-secondary);
+  padding: 1.5rem;
+  border-radius: var(--border-radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  border: 1px solid var(--bg-tertiary);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.active-event-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 80px;
+  text-align: center;
+}
+
+.event-badge {
+  background-color: var(--accent-color);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.event-clue {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.event-clue.empty {
+  color: var(--text-secondary);
+  font-style: italic;
+  font-weight: 400;
+  margin-top: 1rem;
+}
+
+.event-status {
+  font-size: 0.875rem;
+  color: var(--success-color);
+  background-color: rgba(34, 197, 94, 0.1);
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--border-radius-md);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.transport-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.icon-btn:hover:not(:disabled) {
+  color: var(--text-primary);
+  background-color: var(--bg-tertiary);
+}
+
+.icon-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.icon-btn.primary-btn {
+  background-color: var(--accent-color);
+  color: white;
+  padding: 1rem;
+  box-shadow: 0 4px 14px 0 var(--accent-glow);
+}
+
+.icon-btn.primary-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+  background-color: #2563eb;
+}
+
+.slider-container {
+  position: relative;
+  height: 6px;
+  background-color: var(--bg-tertiary);
+  border-radius: 3px;
+  width: 100%;
+}
+
+.timeline-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: var(--accent-color);
+  border-radius: 3px;
+  pointer-events: none;
+  transition: width 0.1s linear;
+}
+
+.timeline-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Clue List */
+.crw-clues {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.crw-clues-section h3 {
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--bg-tertiary);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.crw-clues-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.crw-clue-item {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem;
+  border-radius: var(--border-radius-md);
+  transition: all var(--transition-fast);
+  color: var(--text-secondary);
+}
+
+.crw-clue-item.active {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--text-primary);
+  border-left: 3px solid var(--accent-color);
+  padding-left: calc(0.5rem - 3px);
+}
+
+.crw-clue-header {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.clue-id {
+  font-weight: 700;
+  min-width: 2.25rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.clue-text {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.clue-meta {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.crw-clue-resolution {
+  margin-top: 0.5rem;
+  margin-left: 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.75rem;
+  background-color: var(--bg-tertiary);
+  border-radius: var(--border-radius-md);
+  border-left: 3px solid var(--success-color);
+  animation: slideDown 0.3s ease-out forwards;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.clue-answer {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.clue-parse {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Custom Scrollbar for Right Panel */
+.right-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.right-panel::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+.right-panel::-webkit-scrollbar-thumb {
+  background-color: var(--bg-tertiary);
+  border-radius: 3px;
+}

@@ -1,0 +1,295 @@
+[
+    {
+        "id":  "1A",
+        "direction":  "Across",
+        "enum":  "(7)",
+        "pattern":  "SUPPOSE",
+        "clue":  "Assume nothing succeeded in unfinished meal",
+        "status":  "COMMITTED",
+        "answer":  "SUPPOSE"
+    },
+    {
+        "id":  "1D",
+        "direction":  "Down",
+        "enum":  "(7)",
+        "pattern":  "SLENDER",
+        "clue":  "Faint line dividing poster",
+        "status":  "COMMITTED",
+        "answer":  "SLENDER"
+    },
+    {
+        "id":  "2D",
+        "direction":  "Down",
+        "enum":  "(7)",
+        "pattern":  "PLEASES",
+        "clue":  "Requests by European to put on small suits",
+        "status":  "COMMITTED",
+        "answer":  "PLEASES"
+    },
+    {
+        "id":  "3D",
+        "direction":  "Down",
+        "enum":  "(2,3)",
+        "pattern":  "ONAIR",
+        "clue":  "Live in Barcelona irregularly",
+        "status":  "COMMITTED",
+        "answer":  "ONAIR"
+    },
+    {
+        "id":  "4D",
+        "direction":  "Down",
+        "enum":  "(9)",
+        "pattern":  "ESTABLISH",
+        "clue":  "Prove his table\u0027s wobbly",
+        "status":  "COMMITTED",
+        "answer":  "ESTABLISH"
+    },
+    {
+        "id":  "5A",
+        "direction":  "Across",
+        "enum":  "(7)",
+        "pattern":  "SHIFTED",
+        "clue":  "Undergarment Edward adjusted",
+        "status":  "COMMITTED",
+        "answer":  "SHIFTED",
+        "parse":  "SHIFT (undergarment) + ED (Edward) → SHIFTED; definition: adjusted"
+    },
+    {
+        "id":  "5D",
+        "direction":  "Down",
+        "enum":  "(5)",
+        "pattern":  "SHEDS",
+        "clue":  "The woman\u0027s clothing daughter removes",
+        "status":  "COMMITTED",
+        "answer":  "SHEDS"
+    },
+    {
+        "id":  "6D",
+        "direction":  "Down",
+        "enum":  "(9)",
+        "pattern":  "IMPORTANT",
+        "clue":  "Significant ship in a series of books",
+        "status":  "COMMITTED",
+        "answer":  "IMPORTANT"
+    },
+    {
+        "id":  "7D",
+        "direction":  "Down",
+        "enum":  "(7)",
+        "pattern":  "TRAFFIC",
+        "clue":  "Buying and selling vehicles",
+        "status":  "COMMITTED",
+        "answer":  "TRAFFIC"
+    },
+    {
+        "id":  "8D",
+        "direction":  "Down",
+        "enum":  "(7)",
+        "pattern":  "DANGERS",
+        "clue":  "Threats from last of bed bugs",
+        "status":  "COMMITTED",
+        "answer":  "DANGERS"
+    },
+    {
+        "id":  "9A",
+        "direction":  "Across",
+        "enum":  "(7)",
+        "pattern":  "ELEGANT",
+        "clue":  "Graceful adult hugged by gentle drunk",
+        "status":  "COMMITTED",
+        "answer":  "ELEGANT"
+    },
+    {
+        "id":  "10A",
+        "direction":  "Across",
+        "enum":  "(7)",
+        "pattern":  "EXPLAIN",
+        "clue":  "Clear up old tract of open land",
+        "status":  "COMMITTED",
+        "answer":  "EXPLAIN"
+    },
+    {
+        "id":  "11A",
+        "direction":  "Across",
+        "enum":  "(9)",
+        "pattern":  "DESCRIBES",
+        "clue":  "Reports from half of rude authors",
+        "status":  "COMMITTED",
+        "answer":  "DESCRIBES"
+    },
+    {
+        "id":  "12A",
+        "direction":  "Across",
+        "enum":  "(5)",
+        "pattern":  "RIFLE",
+        "clue":  "Student found in widespread search",
+        "status":  "COMMITTED",
+        "answer":  "RIFLE"
+    },
+    {
+        "id":  "13A",
+        "direction":  "Across",
+        "enum":  "(5)",
+        "pattern":  "ROSES",
+        "clue":  "Wines lifted spirits initially",
+        "status":  "COMMITTED",
+        "answer":  "ROSES"
+    },
+    {
+        "id":  "14D",
+        "direction":  "Down",
+        "enum":  "(9)",
+        "pattern":  "S.A.....E",
+        "clue":  "American enthralled by scariest bats in flight",
+        "status":  "COMMITTED",
+        "answer":  "STAIRCASE",
+        "parse":  "SCARIEST + A (American) ‘bats’=anagram → STAIRCASE; definition: in flight (air-staircase)"
+    },
+    {
+        "id":  "15A",
+        "direction":  "Across",
+        "enum":  "(9)",
+        "pattern":  "INSTANCES",
+        "clue":  "Makes reference to hip positions",
+        "status":  "COMMITTED",
+        "answer":  "INSTANCES"
+    },
+    {
+        "id":  "16D",
+        "direction":  "Down",
+        "enum":  "(9)",
+        "pattern":  "SATISFIED",
+        "clue":  "Fulfilled sad fetish I arranged without husband",
+        "status":  "COMMITTED",
+        "answer":  "SATISFIED"
+    },
+    {
+        "id":  "17A",
+        "direction":  "Across",
+        "enum":  "(4,1,4)",
+        "pattern":  "LIKEASHOT",
+        "clue":  "Immediately get a kick from a gun discharge",
+        "status":  "COMMITTED",
+        "answer":  "LIKEASHOT"
+    },
+    {
+        "id":  "17D",
+        "direction":  "Down",
+        "enum":  "(7)",
+        "pattern":  "L.S.O.S",
+        "clue":  "To a smaller extent, head of state supports working classes",
+        "status":  "COMMITTED",
+        "answer":  "LESSONS",
+        "parse":  "LESS (to a smaller extent) + ON (supports) + S (head of State) → LESSONS; definition: working classes"
+    },
+    {
+        "id":  "18D",
+        "direction":  "Down",
+        "enum":  "(7)",
+        "pattern":  "KIPPERS",
+        "clue":  "Fish � these could be in the sack",
+        "status":  "COMMITTED",
+        "answer":  "KIPPERS"
+    },
+    {
+        "id":  "19A",
+        "direction":  "Across",
+        "enum":  "(5)",
+        "pattern":  "TROTS",
+        "clue":  "Radical left-wingers run scared at first",
+        "status":  "COMMITTED",
+        "answer":  "TROTS"
+    },
+    {
+        "id":  "20D",
+        "direction":  "Down",
+        "enum":  "(7)",
+        "pattern":  "OUTLINE",
+        "clue":  "Silhouette revealed crow\u0027s foot",
+        "status":  "COMMITTED",
+        "answer":  "OUTLINE"
+    },
+    {
+        "id":  "21D",
+        "direction":  "Down",
+        "enum":  "(7)",
+        "pattern":  "SADNESS",
+        "clue":  "Some scientists send a spaceship up in regret",
+        "status":  "COMMITTED",
+        "answer":  "SADNESS"
+    },
+    {
+        "id":  "22A",
+        "direction":  "Across",
+        "enum":  "(5)",
+        "pattern":  "..P.R",
+        "clue":  "Drink beer regularly? Wicked!",
+        "status":  "COMMITTED",
+        "answer":  "SUPER",
+        "parse":  "SUP (drink) + ER (bEeR regularly) → SUPER; definition: Wicked! (excellent)"
+    },
+    {
+        "id":  "23A",
+        "direction":  "Across",
+        "enum":  "(9)",
+        "pattern":  "HESITATED",
+        "clue":  "His Excellency expounded about one\u0027s getting delayed",
+        "status":  "COMMITTED",
+        "answer":  "HESITATED"
+    },
+    {
+        "id":  "23D",
+        "direction":  "Down",
+        "enum":  "(5)",
+        "pattern":  "HEEDS",
+        "clue":  "Pays attention to what upset editor � story\u0027s beginning",
+        "status":  "COMMITTED",
+        "answer":  "HEEDS"
+    },
+    {
+        "id":  "24D",
+        "direction":  "Down",
+        "enum":  "(5)",
+        "pattern":  "TEALS",
+        "clue":  "Guy almost captures 50 ducks",
+        "status":  "COMMITTED",
+        "answer":  "TEALS"
+    },
+    {
+        "id":  "25A",
+        "direction":  "Across",
+        "enum":  "(7)",
+        "pattern":  "..E.A.E",
+        "clue":  "Run over and peer at cuckoo",
+        "status":  "COMMITTED",
+        "answer":  "OPERATE",
+        "parse":  "anagram(PEER AT) with ‘cuckoo’ as indicator → OPERATE; definition: Run"
+    },
+    {
+        "id":  "26A",
+        "direction":  "Across",
+        "enum":  "(7)",
+        "pattern":  "IMAGINE",
+        "clue":  "Fancy picture frames I note",
+        "status":  "COMMITTED",
+        "answer":  "IMAGINE"
+    },
+    {
+        "id":  "27A",
+        "direction":  "Across",
+        "enum":  "(7)",
+        "pattern":  "SISTERS",
+        "clue":  "Son is brusque, dismissing conclusion of the relatives",
+        "status":  "COMMITTED",
+        "answer":  "SISTERS"
+    },
+    {
+        "id":  "28A",
+        "direction":  "Across",
+        "enum":  "(7)",
+        "pattern":  "DOSSERS",
+        "clue":  "Vagrants dress so badly",
+        "status":  "COMMITTED",
+        "answer":  "DOSSERS"
+    }
+]
