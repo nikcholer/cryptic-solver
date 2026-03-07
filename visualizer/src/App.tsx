@@ -1,47 +1,97 @@
-import { CrosswordGrid } from './components/CrosswordGrid';
-import { TimelineControls } from './components/TimelineControls';
 import { ClueList } from './components/ClueList';
-import { useCrosswordState } from './hooks/useCrosswordState';
+import { ClueWorkspace } from './components/ClueWorkspace';
+import { CrosswordGrid } from './components/CrosswordGrid';
+import { useTutorSession } from './hooks/useTutorSession';
 import './index.css';
 
 export function App() {
   const {
+    puzzle,
+    sessionId,
+    sessionState,
     grid,
-    width,
-    height,
-    progressData,
-    currentEventIndex,
-    activeEvent,
-    setCurrentEventIndex,
-    gridData
-  } = useCrosswordState();
+    acrossClues,
+    downClues,
+    selectedClue,
+    draftAnswer,
+    setDraftAnswer,
+    isLoading,
+    isSubmitting,
+    error,
+    selectClue,
+    selectCell,
+    submitAnswer,
+    requestNextHint,
+  } = useTutorSession();
+
+  if (isLoading) {
+    return (
+      <div className="app-shell centered-state">
+        <h1>Cryptic Tutor</h1>
+        <p>Loading puzzle session...</p>
+      </div>
+    );
+  }
+
+  if (!puzzle || !sessionState) {
+    return (
+      <div className="app-shell centered-state">
+        <h1>Cryptic Tutor</h1>
+        <p>{error ?? 'Unable to initialize the puzzle session.'}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="app-container">
+    <div className="app-shell">
       <header className="app-header">
-        <h1>Cryptic AI Visualizer</h1>
-        <p>Interactive playback of chronological grid resolution</p>
+        <div>
+          <p className="app-kicker">Interactive cryptic tutorial</p>
+          <h1>Cryptic Tutor</h1>
+        </div>
+        <div className="session-chip-group">
+          <span className="session-chip">Puzzle {puzzle.puzzle_id}</span>
+          {sessionId && <span className="session-chip muted">Session {sessionId}</span>}
+        </div>
       </header>
 
-      <main className="main-content">
-        <div className="left-panel">
-          <div className="grid-container">
-            <CrosswordGrid grid={grid} width={width} height={height} />
-          </div>
-          <TimelineControls
-            currentEventIndex={currentEventIndex}
-            totalEvents={progressData.length}
-            onScrub={setCurrentEventIndex}
-            activeEvent={activeEvent}
-          />
-        </div>
+      {error && <div className="error-banner">{error}</div>}
 
-        <aside className="right-panel">
+      <main className="main-layout">
+        <section className="grid-panel">
+          <div className="grid-card">
+            <CrosswordGrid
+              grid={grid}
+              width={puzzle.grid.width}
+              height={puzzle.grid.height}
+              onSelectCell={selectCell}
+            />
+          </div>
+          <ClueWorkspace
+            clue={selectedClue}
+            clueState={selectedClue ? sessionState.clueStates[selectedClue.id] ?? null : null}
+            draftAnswer={draftAnswer}
+            onDraftAnswerChange={setDraftAnswer}
+            onSubmitAnswer={submitAnswer}
+            onRequestHint={requestNextHint}
+            isBusy={isSubmitting}
+          />
+        </section>
+
+        <aside className="sidebar-panel">
           <ClueList
-            gridData={gridData}
-            activeClueId={activeEvent?.id}
-            progressData={progressData}
-            currentEventIndex={currentEventIndex}
+            title="Across"
+            clues={acrossClues}
+            clueStates={sessionState.clueStates}
+            activeClueId={sessionState.selectedClueId}
+            onSelectClue={selectClue}
+          />
+          <ClueList
+            title="Down"
+            clues={downClues}
+            clueStates={sessionState.clueStates}
+            activeClueId={sessionState.selectedClueId}
+            onSelectClue={selectClue}
           />
         </aside>
       </main>

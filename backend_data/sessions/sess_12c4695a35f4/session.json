@@ -1,0 +1,234 @@
+{
+  "session_id": "sess_12c4695a35f4",
+  "puzzle_id": "cryptic-2026-03-03",
+  "selected_clue_id": null,
+  "version": 2,
+  "cells": {},
+  "entries": {},
+  "clue_states": {
+    "1A": {
+      "status": "untouched",
+      "current_pattern": ".......",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "5A": {
+      "status": "untouched",
+      "current_pattern": ".......",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "9A": {
+      "status": "untouched",
+      "current_pattern": ".......",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "10A": {
+      "status": "untouched",
+      "current_pattern": ".......",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "11A": {
+      "status": "untouched",
+      "current_pattern": ".........",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "12A": {
+      "status": "untouched",
+      "current_pattern": ".....",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "13A": {
+      "status": "untouched",
+      "current_pattern": ".....",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "15A": {
+      "status": "untouched",
+      "current_pattern": ".........",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "17A": {
+      "status": "untouched",
+      "current_pattern": ".........",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "19A": {
+      "status": "untouched",
+      "current_pattern": ".....",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "22A": {
+      "status": "untouched",
+      "current_pattern": ".....",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "23A": {
+      "status": "untouched",
+      "current_pattern": ".........",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "25A": {
+      "status": "untouched",
+      "current_pattern": ".......",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "26A": {
+      "status": "untouched",
+      "current_pattern": ".......",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "27A": {
+      "status": "untouched",
+      "current_pattern": ".......",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "28A": {
+      "status": "untouched",
+      "current_pattern": ".......",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "1D": {
+      "status": "untouched",
+      "current_pattern": ".......",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "2D": {
+      "status": "untouched",
+      "current_pattern": ".......",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "3D": {
+      "status": "untouched",
+      "current_pattern": ".....",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "4D": {
+      "status": "untouched",
+      "current_pattern": ".........",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "5D": {
+      "status": "untouched",
+      "current_pattern": ".....",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "6D": {
+      "status": "untouched",
+      "current_pattern": ".........",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "7D": {
+      "status": "untouched",
+      "current_pattern": ".......",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "8D": {
+      "status": "untouched",
+      "current_pattern": ".......",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "14D": {
+      "status": "untouched",
+      "current_pattern": ".........",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "16D": {
+      "status": "untouched",
+      "current_pattern": ".........",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "17D": {
+      "status": "untouched",
+      "current_pattern": ".......",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "18D": {
+      "status": "untouched",
+      "current_pattern": ".......",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "20D": {
+      "status": "untouched",
+      "current_pattern": ".......",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "21D": {
+      "status": "untouched",
+      "current_pattern": ".......",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "23D": {
+      "status": "untouched",
+      "current_pattern": ".....",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    },
+    "24D": {
+      "status": "untouched",
+      "current_pattern": ".....",
+      "hint_level_shown": 0,
+      "hints": [],
+      "validation": null
+    }
+  }
+}

@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from app.runtime.adapter import StubRuntimeAdapter
+from app.runtime.adapter import build_runtime_adapter
 from app.services.grid_engine import GridEngine
 from app.services.puzzle_loader import PuzzleLoader
 from app.services.session_service import SessionService
@@ -22,4 +22,5 @@ def get_puzzle_loader() -> PuzzleLoader:
 
 @lru_cache(maxsize=1)
 def get_session_service() -> SessionService:
-    return SessionService(SessionStore(get_repo_root()), GridEngine(), StubRuntimeAdapter())
+    repo_root = get_repo_root()
+    return SessionService(SessionStore(repo_root), GridEngine(), build_runtime_adapter(repo_root))

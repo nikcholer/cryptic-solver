@@ -1,0 +1,12 @@
+[
+  {
+    "clue_id": "3D",
+    "family": "alternating",
+    "note": "Letter-selection clue that the local heuristic tends to misclassify."
+  },
+  {
+    "clue_id": "23D",
+    "family": "reversal_or_charade",
+    "note": "Surface strongly invites multiple parses."
+  }
+]
