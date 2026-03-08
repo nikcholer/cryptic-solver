@@ -105,6 +105,11 @@ p {
   color: var(--text-muted);
 }
 
+.usage-chip {
+  background: rgba(12, 108, 90, 0.08);
+  border-color: rgba(12, 108, 90, 0.18);
+}
+
 .error-banner {
   margin-bottom: 18px;
   padding: 14px 16px;
@@ -483,4 +488,66 @@ p {
   .crw-clues-section {
     padding: 16px;
   }
+}
+.workspace-linked {
+  margin: 0;
+  color: #6b5f3b;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+}
+
+.answer-justification {
+  width: 100%;
+  margin-top: 0.65rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(34, 32, 29, 0.18);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.45);
+  color: inherit;
+  font: inherit;
+  resize: vertical;
+}
+
+.override-row {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 0.75rem;
+}
+
+.action-btn.override {
+  border-color: rgba(165, 94, 62, 0.45);
+  color: #8f4e31;
+}
+
+.puzzle-complete {
+  position: relative;
+}
+
+.completion-banner {
+  margin-bottom: 20px;
+  padding: 18px 22px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(34, 116, 77, 0.24);
+  background:
+    linear-gradient(135deg, rgba(34, 116, 77, 0.12), rgba(255, 253, 246, 0.86)),
+    rgba(255, 253, 246, 0.92);
+  box-shadow: var(--shadow-panel);
+}
+
+.completion-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.72rem;
+  color: var(--success);
+  margin-bottom: 6px;
+}
+
+.completion-banner h2 {
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.completion-banner p:last-child {
+  color: var(--text-muted);
 }

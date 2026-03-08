@@ -8,7 +8,7 @@ from app.models.session import ClueState, EntryRecord, SessionState, ValidationR
 class GridEngine:
     def build_empty_clue_states(self, puzzle: PuzzleDefinition) -> dict[str, ClueState]:
         return {
-            clue_id: ClueState(current_pattern=self.pattern_for_cells(puzzle.clues[clue_id], {}))
+            clue_id: ClueState(current_pattern=self.pattern_for_cells(puzzle, puzzle.clues[clue_id], {}))
             for clue_id in puzzle.clues
         }
 
@@ -24,7 +24,7 @@ class GridEngine:
         updated_cells = dict(session.cells)
         changed_cells: dict[str, str] = {}
         affected = {clue_id}
-        for index, (x, y) in enumerate(self.iter_clue_cells(clue)):
+        for index, (x, y) in enumerate(self.iter_clue_cells(puzzle, clue)):
             char = normalized[index] if index < len(normalized) else ""
             if not char:
                 continue
@@ -34,20 +34,48 @@ class GridEngine:
             affected.update(self.find_crossing_clues(puzzle, x, y))
         return updated_cells, sorted(affected), changed_cells
 
+    def rebuild_cells_from_entries(self, puzzle: PuzzleDefinition, session: SessionState) -> dict[str, str]:
+        cells: dict[str, str] = {}
+        for clue_id, entry in session.entries.items():
+            clue = puzzle.clues.get(clue_id)
+            if clue is None:
+                continue
+            for index, (x, y) in enumerate(self.iter_clue_cells(puzzle, clue)):
+                if index >= len(entry.answer):
+                    break
+                cells[self.key(x, y)] = entry.answer[index]
+        return cells
+
+    def changed_cells(self, previous: dict[str, str], current: dict[str, str]) -> dict[str, str]:
+        changed: dict[str, str] = {}
+        for key in set(previous) | set(current):
+            before = previous.get(key, '')
+            after = current.get(key, '')
+            if before != after:
+                changed[key] = after
+        return changed
+
     def update_session_from_cells(self, puzzle: PuzzleDefinition, session: SessionState, cells: dict[str, str]) -> dict[str, str]:
         patterns: dict[str, str] = {}
         for clue_id, clue in puzzle.clues.items():
-            pattern = self.pattern_for_cells(clue, cells)
+            pattern = self.pattern_for_cells(puzzle, clue, cells)
             patterns[clue_id] = pattern
             clue_state = session.clue_states.setdefault(clue_id, ClueState(current_pattern=pattern))
+            previous_pattern = clue_state.current_pattern
             clue_state.current_pattern = pattern
+            if clue_id not in session.entries and previous_pattern != pattern:
+                self._reset_pattern_sensitive_hints(clue_state)
             if clue_id in session.entries:
-                result = session.entries[clue_id].status
-                clue_state.status = {
-                    ValidationResult.CONFIRMED: ClueStatus.CONFIRMED,
-                    ValidationResult.PLAUSIBLE: ClueStatus.PLAUSIBLE,
-                    ValidationResult.CONFLICT: ClueStatus.CONFLICT,
-                }[result]
+                entry = session.entries[clue_id]
+                if entry.source == 'user_override':
+                    clue_state.status = ClueStatus.FORCED
+                else:
+                    result = entry.status
+                    clue_state.status = {
+                        ValidationResult.CONFIRMED: ClueStatus.CONFIRMED,
+                        ValidationResult.PLAUSIBLE: ClueStatus.PLAUSIBLE,
+                        ValidationResult.CONFLICT: ClueStatus.CONFLICT,
+                    }[result]
             elif pattern.strip('.'):
                 clue_state.status = ClueStatus.IN_PROGRESS
             else:
@@ -55,8 +83,15 @@ class GridEngine:
         session.cells = cells
         return patterns
 
-    def make_entry_record(self, answer: str, result: ValidationResult) -> EntryRecord:
-        return EntryRecord(answer=self.normalize_answer(answer), status=result)
+    def _reset_pattern_sensitive_hints(self, clue_state: ClueState) -> None:
+        if clue_state.hint_level_shown <= 2:
+            return
+        clue_state.hints = [hint for hint in clue_state.hints if hint.level <= 2]
+        clue_state.hint_level_shown = 2 if clue_state.hints else 0
+
+    def make_entry_record(self, answer: str, result: ValidationResult | str, source: str = 'user') -> EntryRecord:
+        normalized_result = result if isinstance(result, ValidationResult) else ValidationResult(result)
+        return EntryRecord(answer=self.normalize_answer(answer), status=normalized_result, source=source)
 
     def attach_validation(
         self,
@@ -74,13 +109,21 @@ class GridEngine:
             ValidationResult.CONFLICT: ClueStatus.CONFLICT,
         }[result]
 
-    def pattern_for_cells(self, clue: PuzzleClue, cells: dict[str, str]) -> str:
+    def pattern_for_cells(self, puzzle: PuzzleDefinition, clue: PuzzleClue, cells: dict[str, str]) -> str:
         chars: list[str] = []
-        for x, y in self.iter_clue_cells(clue):
+        for x, y in self.iter_clue_cells(puzzle, clue):
             chars.append(cells.get(self.key(x, y), '.'))
         return ''.join(chars)
 
-    def iter_clue_cells(self, clue: PuzzleClue):
+    def iter_clue_cells(self, puzzle: PuzzleDefinition, clue: PuzzleClue):
+        if clue.linked_entries:
+            for linked_id in clue.linked_entries:
+                segment = puzzle.clues[linked_id]
+                yield from self.iter_slot_cells(segment)
+            return
+        yield from self.iter_slot_cells(clue)
+
+    def iter_slot_cells(self, clue: PuzzleClue):
         x = clue.x
         y = clue.y
         for _ in range(clue.length):
@@ -90,10 +133,18 @@ class GridEngine:
             else:
                 y += 1
 
+    def find_crossing_clues_for_clue(self, puzzle: PuzzleDefinition, clue_id: str) -> list[str]:
+        clue = puzzle.clues[clue_id]
+        matches: set[str] = set()
+        for x, y in self.iter_clue_cells(puzzle, clue):
+            matches.update(self.find_crossing_clues(puzzle, x, y))
+        matches.discard(clue_id)
+        return sorted(matches)
+
     def find_crossing_clues(self, puzzle: PuzzleDefinition, x: int, y: int) -> list[str]:
         matches: list[str] = []
         for clue_id, clue in puzzle.clues.items():
-            for cell_x, cell_y in self.iter_clue_cells(clue):
+            for cell_x, cell_y in self.iter_clue_cells(puzzle, clue):
                 if cell_x == x and cell_y == y:
                     matches.append(clue_id)
                     break

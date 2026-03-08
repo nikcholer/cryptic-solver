@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Protocol
 
 from app.models.common import HintKind, ValidationResult
-from app.models.puzzle import PuzzleClue
+from app.models.puzzle import PuzzleClue, PuzzleDefinition
+from app.models.session import SessionState
 from app.runtime.payloads import build_next_hint_request, build_semantic_judgement_request
 from app.runtime.schemas import NextHintResponse, SemanticJudgementResponse
 
@@ -63,13 +64,23 @@ CHARADE_LINKERS = ['with', 'after', 'before', 'beside', 'next to']
 
 
 class RuntimeAdapter(Protocol):
-    def next_hint(self, clue: PuzzleClue, pattern: str, next_level: int) -> dict[str, object]: ...
+    def next_hint(
+        self,
+        clue: PuzzleClue,
+        pattern: str,
+        next_level: int,
+        puzzle: PuzzleDefinition | None = None,
+        session: SessionState | None = None,
+    ) -> dict[str, object]: ...
 
     def validate_answer(
         self,
         clue: PuzzleClue,
         proposed_answer: str,
         pattern_before: str,
+        puzzle: PuzzleDefinition | None = None,
+        session: SessionState | None = None,
+        solver_justification: str | None = None,
     ) -> dict[str, object]: ...
 
 
@@ -80,10 +91,13 @@ class RuntimeGateway(Protocol):
 class SemanticAdjudicator(Protocol):
     def adjudicate(
         self,
+        puzzle: PuzzleDefinition,
+        session: SessionState,
         clue: PuzzleClue,
         analysis: 'Analysis',
         answer: str,
         mechanical_result: dict[str, object],
+        solver_justification: str | None = None,
     ) -> dict[str, object] | None: ...
 
 
@@ -134,29 +148,36 @@ class GatewaySemanticAdjudicator:
 
     def adjudicate(
         self,
+        puzzle: PuzzleDefinition,
+        session: SessionState,
         clue: PuzzleClue,
         analysis: Analysis,
         answer: str,
         mechanical_result: dict[str, object],
+        solver_justification: str | None = None,
     ) -> dict[str, object] | None:
-        payload = build_semantic_judgement_request(clue, analysis, answer, mechanical_result)
+        payload = build_semantic_judgement_request(puzzle, session, clue, analysis, answer, mechanical_result, solver_justification)
         decoded = self.gateway.invoke(payload)
         if decoded is None:
             return None
+        usage = _extract_usage(decoded)
         try:
             parsed = SemanticJudgementResponse.model_validate(decoded)
         except Exception:
             return None
-        return {
+        result = {
             'clueId': clue.id,
             'result': ValidationResult(parsed.result),
             'reason': parsed.reason,
             'confidence': parsed.confidence,
         }
+        if usage is not None:
+            result['_usage'] = usage
+        return result
 
 
 class StubRuntimeAdapter:
-    def next_hint(self, clue: PuzzleClue, pattern: str, next_level: int) -> dict[str, object]:
+    def next_hint(self, clue: PuzzleClue, pattern: str, next_level: int, puzzle: PuzzleDefinition | None = None, session: SessionState | None = None) -> dict[str, object]:
         hint_map = {
             1: (HintKind.CLUE_TYPE, 'This looks like a cryptic clue with standard wordplay.'),
             2: (HintKind.STRUCTURE, 'The definition is likely at one end of the clue.'),
@@ -178,12 +199,15 @@ class StubRuntimeAdapter:
         clue: PuzzleClue,
         proposed_answer: str,
         pattern_before: str,
+        puzzle: PuzzleDefinition | None = None,
+        session: SessionState | None = None,
+        solver_justification: str | None = None,
     ) -> dict[str, object]:
         answer = _normalize_answer(proposed_answer)
         if not answer:
             return _result(clue.id, ValidationResult.CONFLICT, 'Empty answer.', 0.0)
-        if len(answer) != clue.length:
-            return _result(clue.id, ValidationResult.CONFLICT, f'Answer must be {clue.length} letters long.', 0.95)
+        if len(answer) != clue.answer_length:
+            return _result(clue.id, ValidationResult.CONFLICT, f'Answer must be {clue.answer_length} letters long.', 0.95)
         if '.' in pattern_before and not _matches_pattern(answer, pattern_before):
             return _result(clue.id, ValidationResult.CONFLICT, 'Submitted answer conflicts with current checking letters.', 0.9)
         return _result(clue.id, ValidationResult.PLAUSIBLE, 'Fits length and current checking letters. Semantic validation is stubbed.', 0.35)
@@ -204,9 +228,9 @@ class HeuristicRuntimeAdapter:
         self.semantic_adjudicator = semantic_adjudicator
         self.runtime_gateway = runtime_gateway
 
-    def next_hint(self, clue: PuzzleClue, pattern: str, next_level: int) -> dict[str, object]:
+    def next_hint(self, clue: PuzzleClue, pattern: str, next_level: int, puzzle: PuzzleDefinition | None = None, session: SessionState | None = None) -> dict[str, object]:
         analysis = self._analyze_clue(clue, pattern)
-        runtime_result = self._runtime_next_hint(clue, pattern, next_level, analysis)
+        runtime_result = self._runtime_next_hint(clue, pattern, next_level, analysis, puzzle, session)
         if runtime_result is not None:
             return runtime_result
         kind, text = self._hint_for_level(clue, pattern, analysis, next_level)
@@ -223,45 +247,67 @@ class HeuristicRuntimeAdapter:
         clue: PuzzleClue,
         proposed_answer: str,
         pattern_before: str,
+        puzzle: PuzzleDefinition | None = None,
+        session: SessionState | None = None,
+        solver_justification: str | None = None,
     ) -> dict[str, object]:
         answer = _normalize_answer(proposed_answer)
         if not answer:
             return _result(clue.id, ValidationResult.CONFLICT, 'Empty answer.', 0.0)
-        if len(answer) != clue.length:
-            return _result(clue.id, ValidationResult.CONFLICT, f'Answer must be {clue.length} letters long.', 0.98)
+        if len(answer) != clue.answer_length:
+            return _result(clue.id, ValidationResult.CONFLICT, f'Answer must be {clue.answer_length} letters long.', 0.98)
         if not _matches_pattern(answer, pattern_before):
             return _result(clue.id, ValidationResult.CONFLICT, 'Submitted answer conflicts with current checking letters.', 0.94)
 
         analysis = self._analyze_clue(clue, answer)
         if answer in analysis.solver_candidates:
             result = _result(clue.id, ValidationResult.CONFIRMED, self._confirmed_reason(analysis, answer), 0.93)
-            return self._apply_semantic_judgement(clue, analysis, answer, result)
+            return self._apply_semantic_judgement(clue, analysis, answer, result, puzzle, session, solver_justification)
         if analysis.solver_candidates and analysis.clue_type in {'anagram', 'hidden', 'reversal'}:
             candidates = ', '.join(candidate.upper() for candidate in analysis.solver_candidates[:3])
             return _result(clue.id, ValidationResult.CONFLICT, f'Current wordplay analysis points elsewhere: {candidates}.', 0.78)
         if answer.lower() in self.wordlist:
             result = _result(clue.id, ValidationResult.PLAUSIBLE, 'Fits length and checking letters, but no strong local parse is confirmed yet.', 0.55)
-            return self._apply_semantic_judgement(clue, analysis, answer, result)
+            return self._apply_semantic_judgement(clue, analysis, answer, result, puzzle, session, solver_justification)
+        phrase_words = _phrase_words_for_entry(clue, proposed_answer, answer)
+        if len(phrase_words) > 1 and all(word.lower() in self.wordlist for word in phrase_words):
+            display = ' + '.join(word.upper() for word in phrase_words)
+            result = _result(clue.id, ValidationResult.PLAUSIBLE, f'Fits the grid and segments cleanly as {display}.', 0.58)
+            return self._apply_semantic_judgement(clue, analysis, answer, result, puzzle, session, solver_justification)
+        if self.semantic_adjudicator is not None:
+            result = _result(clue.id, ValidationResult.PLAUSIBLE, 'Fits the grid, but local lexical checks are inconclusive.', 0.41)
+            adjudicated = self._apply_semantic_judgement(clue, analysis, answer, result, puzzle, session, solver_justification)
+            if adjudicated.get('result') != ValidationResult.CONFLICT:
+                return adjudicated
+        if _looks_like_proper_noun_clue(clue.clue):
+            result = _result(clue.id, ValidationResult.PLAUSIBLE, 'Fits the grid; this clue may point to a proper noun or place name not covered by the local word list.', 0.43)
+            return self._apply_semantic_judgement(clue, analysis, answer, result, puzzle, session, solver_justification)
         return _result(clue.id, ValidationResult.CONFLICT, 'Fits the grid, but it is not in the local crossword word list.', 0.81)
 
-    def _runtime_next_hint(self, clue: PuzzleClue, pattern: str, next_level: int, analysis: Analysis) -> dict[str, object] | None:
+    def _runtime_next_hint(self, clue: PuzzleClue, pattern: str, next_level: int, analysis: Analysis, puzzle: PuzzleDefinition | None, session: SessionState | None) -> dict[str, object] | None:
         if self.runtime_gateway is None:
             return None
-        payload = build_next_hint_request(clue, pattern, next_level - 1, analysis)
+        if puzzle is None or session is None:
+            return None
+        payload = build_next_hint_request(puzzle, session, clue, pattern, next_level - 1, analysis)
         decoded = self.runtime_gateway.invoke(payload)
         if decoded is None:
             return None
+        usage = _extract_usage(decoded)
         try:
             parsed = NextHintResponse.model_validate(decoded)
         except Exception:
             return None
-        return {
+        result = {
             'clueId': parsed.clueId,
             'hintLevel': parsed.hintLevel,
             'kind': HintKind(parsed.kind),
             'text': parsed.text,
             'confidence': parsed.confidence,
         }
+        if usage is not None:
+            result['_usage'] = usage
+        return result
 
     def _apply_semantic_judgement(
         self,
@@ -269,10 +315,15 @@ class HeuristicRuntimeAdapter:
         analysis: Analysis,
         answer: str,
         mechanical_result: dict[str, object],
+        puzzle: PuzzleDefinition | None,
+        session: SessionState | None,
+        solver_justification: str | None = None,
     ) -> dict[str, object]:
         if self.semantic_adjudicator is None:
             return mechanical_result
-        semantic_result = self.semantic_adjudicator.adjudicate(clue, analysis, answer, mechanical_result)
+        if puzzle is None or session is None:
+            return mechanical_result
+        semantic_result = self.semantic_adjudicator.adjudicate(puzzle, session, clue, analysis, answer, mechanical_result, solver_justification)
         return semantic_result or mechanical_result
 
     def _analyze_clue(self, clue: PuzzleClue, pattern: str) -> Analysis:
@@ -353,18 +404,18 @@ class HeuristicRuntimeAdapter:
         return []
 
     def _solver_candidates(self, clue: PuzzleClue, clue_type: str, pattern: str, fodder_words: list[str], indicator_index: int | None, words: list[str]) -> list[str]:
-        clean_pattern = _normalize_pattern(pattern, clue.length)
+        clean_pattern = _normalize_pattern(pattern, clue.answer_length)
         if clue_type == 'anagram' and fodder_words:
             fodder = ''.join(_normalize_answer(word) for word in fodder_words)
-            if len(fodder) == clue.length:
+            if len(fodder) == clue.answer_length:
                 result = self._run_solver('anagram.py', ['--fodder', fodder, '--pattern', clean_pattern])
                 return [candidate.upper() for candidate in result.get('candidates', [])]
         if clue_type == 'hidden' and fodder_words:
-            result = self._run_solver('hidden.py', ['--fodder', ' '.join(fodder_words), '--length', str(clue.length), '--pattern', clean_pattern])
+            result = self._run_solver('hidden.py', ['--fodder', ' '.join(fodder_words), '--length', str(clue.answer_length), '--pattern', clean_pattern])
             return [candidate.upper() for candidate in result.get('candidates', [])]
         if clue_type == 'reversal' and fodder_words:
             fodder = ''.join(_normalize_answer(word) for word in fodder_words)
-            if len(fodder) == clue.length:
+            if len(fodder) == clue.answer_length:
                 result = self._run_solver('reversal.py', ['--fodder', fodder, '--pattern', clean_pattern])
                 return [candidate.upper() for candidate in result.get('candidates', [])]
         if clue_type == 'container' and indicator_index is not None and 0 < indicator_index < len(words) - 1:
@@ -491,6 +542,27 @@ def build_semantic_adjudicator(repo_root: Path, runtime_gateway: RuntimeGateway 
     return None
 
 
+def _looks_like_proper_noun_clue(clue_text: str) -> bool:
+    words = re.findall(r"[A-Za-z][A-Za-z'-]*", clue_text)
+    capitalized = [word for word in words if word[:1].isupper()]
+    return ',' in clue_text or len(capitalized) >= 3
+
+
+def _phrase_words_for_entry(clue: PuzzleClue, raw_answer: str, normalized_answer: str) -> list[str]:
+    explicit_words = [word for word in re.split(r"[^A-Za-z]+", raw_answer.upper()) if word]
+    if len(explicit_words) > 1 and ''.join(explicit_words) == normalized_answer:
+        return explicit_words
+    segments = [int(value) for value in re.findall(r"\d+", clue.enum or '')]
+    if len(segments) <= 1 or sum(segments) != len(normalized_answer):
+        return []
+    words: list[str] = []
+    index = 0
+    for length in segments:
+        words.append(normalized_answer[index:index + length])
+        index += length
+    return words
+
+
 def _normalize_answer(answer: str) -> str:
     return ''.join(char for char in answer.upper() if char.isalpha())
 
@@ -511,3 +583,13 @@ def _matches_pattern(answer: str, pattern: str) -> bool:
 
 def _result(clue_id: str, result: ValidationResult, reason: str, confidence: float | None) -> dict[str, object]:
     return {'clueId': clue_id, 'result': result, 'reason': reason, 'confidence': confidence}
+
+def _extract_usage(decoded: dict[str, object]) -> dict[str, int] | None:
+    usage = decoded.pop('_usage', None)
+    if not isinstance(usage, dict):
+        return None
+    return {
+        'input_tokens': int(usage.get('input_tokens', 0) or 0),
+        'cached_input_tokens': int(usage.get('cached_input_tokens', 0) or 0),
+        'output_tokens': int(usage.get('output_tokens', 0) or 0),
+    }

@@ -2,11 +2,18 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 CapabilityRole = Literal['lite', 'reasoner', 'vision']
 RuntimeOperation = Literal['next_hint', 'semantic_judgement', 'validate_answer']
+
+
+class ReferencedClueContext(BaseModel):
+    clueId: str
+    clue: str
+    enumeration: str | None = None
+    answer: str | None = None
 
 
 class MechanicalResult(BaseModel):
@@ -18,7 +25,7 @@ class MechanicalResult(BaseModel):
 class SemanticJudgementContext(BaseModel):
     clueId: str
     clue: str
-    enumeration: str
+    enumeration: str | None = None
     length: int
     proposedAnswer: str
     definitionText: str
@@ -27,13 +34,16 @@ class SemanticJudgementContext(BaseModel):
     indicator: str | None = None
     fodderText: str | None = None
     solverCandidates: list[str]
+    linkedEntries: list[str] = Field(default_factory=list)
+    referencedClues: list[ReferencedClueContext] = Field(default_factory=list)
+    solverJustification: str | None = None
     mechanicalResult: MechanicalResult
 
 
 class NextHintContext(BaseModel):
     clueId: str
     clue: str
-    enumeration: str
+    enumeration: str | None = None
     pattern: str
     hintLevelAlreadyShown: int
     clueType: str
@@ -42,6 +52,8 @@ class NextHintContext(BaseModel):
     indicator: str | None = None
     fodderText: str | None = None
     solverCandidates: list[str]
+    linkedEntries: list[str] = Field(default_factory=list)
+    referencedClues: list[ReferencedClueContext] = Field(default_factory=list)
 
 
 class RuntimeRequest(BaseModel):

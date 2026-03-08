@@ -81,7 +81,7 @@ def main() -> int:
     for case in cases:
         clue_id = case["clue_id"].upper()
         clue = puzzle.clues[clue_id]
-        pattern = "." * clue.length
+        pattern = "." * clue.answer_length
         analysis = adapter._analyze_clue(clue, pattern)
         answer = placed_answers.get(clue_id, "")
         hint_request = build_next_hint_request(clue, pattern, 1, analysis)

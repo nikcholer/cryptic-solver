@@ -4,8 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.api.dependencies import get_puzzle_loader, get_session_service
 from app.models.api import (
+    AcceptEntryRequest,
+    AcceptEntryResponse,
     CreateSessionRequest,
     CreateSessionResponse,
+    ClearEntryResponse,
     ReanalyzeAffectedRequest,
     ReanalyzeAffectedResponse,
     SelectClueRequest,
@@ -74,7 +77,7 @@ def submit_entry(
         session = session_service.get_session(session_id)
         puzzle = puzzle_loader.load_puzzle(session.puzzle_id)
         updated_session, affected_clues, patterns, changed_cells = session_service.submit_entry(
-            puzzle, session_id, request.clue_id, request.answer
+            puzzle, session_id, request.clue_id, request.answer, request.justification
         )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail="session_not_found") from exc
@@ -105,3 +108,58 @@ def reanalyze_affected(
         raise HTTPException(status_code=404, detail="session_not_found") from exc
     updates = session_service.reanalyze_affected(puzzle, session_id, request.clue_ids)
     return ReanalyzeAffectedResponse(clueUpdates=updates)
+
+@router.delete("/{session_id}/entries/{clue_id}", response_model=ClearEntryResponse)
+def clear_entry(
+    session_id: str,
+    clue_id: str,
+    puzzle_loader: PuzzleLoader = Depends(get_puzzle_loader),
+    session_service: SessionService = Depends(get_session_service),
+):
+    try:
+        session = session_service.get_session(session_id)
+        puzzle = puzzle_loader.load_puzzle(session.puzzle_id)
+        updated_session, affected_clues, patterns, changed_cells = session_service.clear_entry(puzzle, session_id, clue_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="session_not_found") from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="clue_not_found") from exc
+    return ClearEntryResponse(
+        clueId=clue_id,
+        sessionDelta={
+            "updatedCells": changed_cells,
+            "updatedPatterns": {current_clue_id: patterns[current_clue_id] for current_clue_id in affected_clues},
+            "affectedClues": affected_clues,
+        },
+    )
+
+
+@router.post("/{session_id}/entries/{clue_id}/accept", response_model=AcceptEntryResponse)
+def accept_entry(
+    session_id: str,
+    clue_id: str,
+    request: AcceptEntryRequest,
+    puzzle_loader: PuzzleLoader = Depends(get_puzzle_loader),
+    session_service: SessionService = Depends(get_session_service),
+):
+    try:
+        session = session_service.get_session(session_id)
+        puzzle = puzzle_loader.load_puzzle(session.puzzle_id)
+        updated_session, affected_clues, patterns, changed_cells = session_service.accept_entry(
+            puzzle, session_id, clue_id, request.answer, request.justification
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="session_not_found") from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="clue_not_found") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return AcceptEntryResponse(
+        clueId=clue_id,
+        validation=updated_session.clue_states[clue_id].validation,
+        sessionDelta={
+            "updatedCells": changed_cells,
+            "updatedPatterns": {current_clue_id: patterns[current_clue_id] for current_clue_id in affected_clues},
+            "affectedClues": affected_clues,
+        },
+    )

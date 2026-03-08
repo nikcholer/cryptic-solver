@@ -15,12 +15,16 @@ export function App() {
     selectedClue,
     draftAnswer,
     setDraftAnswer,
+    justification,
+    setJustification,
     isLoading,
     isSubmitting,
     error,
     selectClue,
     selectCell,
     submitAnswer,
+    acceptAnswer,
+    clearAnswer,
     requestNextHint,
   } = useTutorSession();
 
@@ -42,8 +46,11 @@ export function App() {
     );
   }
 
+  const allCluesConfirmed = Object.values(sessionState.clueStates).every((clueState) => clueState.status === 'confirmed');
+  const formatTokens = (count: number) => new Intl.NumberFormat('en-GB').format(count);
+
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${allCluesConfirmed ? 'puzzle-complete' : ''}`}>
       <header className="app-header">
         <div>
           <p className="app-kicker">Interactive cryptic tutorial</p>
@@ -52,10 +59,26 @@ export function App() {
         <div className="session-chip-group">
           <span className="session-chip">Puzzle {puzzle.puzzle_id}</span>
           {sessionId && <span className="session-chip muted">Session {sessionId}</span>}
+          <span className="session-chip usage-chip">Input {formatTokens(sessionState.runtimeUsage.input_tokens)}</span>
+          <span className="session-chip usage-chip">Output {formatTokens(sessionState.runtimeUsage.output_tokens)}</span>
+          {sessionState.runtimeUsage.cached_input_tokens > 0 ? (
+            <span className="session-chip usage-chip muted">
+              Cached {formatTokens(sessionState.runtimeUsage.cached_input_tokens)}
+            </span>
+          ) : null}
+          <span className="session-chip usage-chip muted">Calls {formatTokens(sessionState.runtimeUsage.requests)}</span>
         </div>
       </header>
 
       {error && <div className="error-banner">{error}</div>}
+
+      {allCluesConfirmed ? (
+        <section className="completion-banner">
+          <p className="completion-kicker">Puzzle complete</p>
+          <h2>Every clue is confirmed.</h2>
+          <p>The tutor agrees with the full solve.</p>
+        </section>
+      ) : null}
 
       <main className="main-layout">
         <section className="grid-panel">
@@ -72,7 +95,11 @@ export function App() {
             clueState={selectedClue ? sessionState.clueStates[selectedClue.id] ?? null : null}
             draftAnswer={draftAnswer}
             onDraftAnswerChange={setDraftAnswer}
+            justification={justification}
+            onJustificationChange={setJustification}
             onSubmitAnswer={submitAnswer}
+            onAcceptAnswer={acceptAnswer}
+            onClearAnswer={clearAnswer}
             onRequestHint={requestNextHint}
             isBusy={isSubmitting}
           />

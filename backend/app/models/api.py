@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 from .common import HintKind, ValidationResult
 from .puzzle import PuzzleDefinition
-from .session import ClueState, EntryRecord, ValidationRecord
+from .session import ClueState, EntryRecord, RuntimeUsageRecord, ValidationRecord
 
 
 class CreateSessionRequest(BaseModel):
@@ -18,10 +18,17 @@ class SelectClueRequest(BaseModel):
 class SubmitEntryRequest(BaseModel):
     clue_id: str = Field(alias="clueId")
     answer: str
+    justification: str | None = None
 
 
 class CheckAnswerRequest(BaseModel):
     answer: str
+    justification: str | None = None
+
+
+class AcceptEntryRequest(BaseModel):
+    answer: str
+    justification: str | None = None
 
 
 class NextHintRequest(BaseModel):
@@ -38,6 +45,7 @@ class SessionSnapshot(BaseModel):
     cells: dict[str, str]
     entries: dict[str, EntryRecord]
     clue_states: dict[str, ClueState] = Field(alias="clueStates")
+    runtime_usage: RuntimeUsageRecord = Field(alias="runtimeUsage")
 
 
 class PuzzleResponse(BaseModel):
@@ -67,6 +75,17 @@ class SessionDelta(BaseModel):
 
 
 class SubmitEntryResponse(BaseModel):
+    clue_id: str = Field(alias="clueId")
+    validation: ValidationRecord
+    session_delta: SessionDelta = Field(alias="sessionDelta")
+
+
+class ClearEntryResponse(BaseModel):
+    clue_id: str = Field(alias="clueId")
+    session_delta: SessionDelta = Field(alias="sessionDelta")
+
+
+class AcceptEntryResponse(BaseModel):
     clue_id: str = Field(alias="clueId")
     validation: ValidationRecord
     session_delta: SessionDelta = Field(alias="sessionDelta")

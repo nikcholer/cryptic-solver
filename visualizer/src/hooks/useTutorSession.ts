@@ -10,6 +10,7 @@ import type {
 } from '../types';
 
 const DEFAULT_PUZZLE_ID = import.meta.env.VITE_PUZZLE_ID ?? 'cryptic-2026-03-03';
+const SESSION_STORAGE_KEY = `cryptic-tutor-session:${DEFAULT_PUZZLE_ID}`;
 
 async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
   const response = await fetch(input, {
@@ -28,6 +29,47 @@ async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> 
   return (await response.json()) as T;
 }
 
+function getStoredSessionId(): string | null {
+  try {
+    return window.localStorage.getItem(SESSION_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function storeSessionId(sessionId: string | null): void {
+  try {
+    if (sessionId) {
+      window.localStorage.setItem(SESSION_STORAGE_KEY, sessionId);
+    } else {
+      window.localStorage.removeItem(SESSION_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore storage issues and continue with ephemeral sessions.
+  }
+}
+
+function iterateClueCells(clue: PuzzleClue, clues: Record<string, PuzzleClue>): Array<[number, number]> {
+  const cells: Array<[number, number]> = [];
+  const segments = clue.linked_entries?.length
+    ? clue.linked_entries.map((clueId) => clues[clueId]).filter((value): value is PuzzleClue => Boolean(value))
+    : [clue];
+
+  segments.forEach((segment) => {
+    let { x, y } = segment;
+    for (let index = 0; index < segment.length; index += 1) {
+      cells.push([x, y]);
+      if (segment.direction === 'Across') {
+        x += 1;
+      } else {
+        y += 1;
+      }
+    }
+  });
+
+  return cells;
+}
+
 function sortClues(clues: Record<string, PuzzleClue>) {
   return Object.values(clues).sort((left, right) => {
     const numLeft = Number.parseInt(left.id, 10);
@@ -42,6 +84,7 @@ export function useTutorSession() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionState, setSessionState] = useState<SessionState | null>(null);
   const [draftAnswer, setDraftAnswer] = useState('');
+  const [justification, setJustification] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,10 +97,29 @@ export function useTutorSession() {
       setError(null);
       try {
         const puzzleResponse = await fetchJson<PuzzleResponse>(`/api/puzzles/${DEFAULT_PUZZLE_ID}`);
-        const sessionResponse = await fetchJson<CreateSessionResponse>('/api/sessions', {
-          method: 'POST',
-          body: JSON.stringify({ puzzleId: DEFAULT_PUZZLE_ID }),
-        });
+        let sessionResponse: SessionResponse | CreateSessionResponse | null = null;
+        const storedSessionId = getStoredSessionId();
+
+        if (storedSessionId) {
+          try {
+            const resumed = await fetchJson<SessionResponse>(`/api/sessions/${storedSessionId}`);
+            if (resumed.puzzle.puzzle_id === DEFAULT_PUZZLE_ID) {
+              sessionResponse = resumed;
+            } else {
+              storeSessionId(null);
+            }
+          } catch {
+            storeSessionId(null);
+          }
+        }
+
+        if (!sessionResponse) {
+          sessionResponse = await fetchJson<CreateSessionResponse>('/api/sessions', {
+            method: 'POST',
+            body: JSON.stringify({ puzzleId: DEFAULT_PUZZLE_ID }),
+          });
+          storeSessionId(sessionResponse.sessionId);
+        }
 
         if (cancelled) return;
 
@@ -66,6 +128,7 @@ export function useTutorSession() {
           setSessionId(sessionResponse.sessionId);
           setSessionState(sessionResponse.sessionState);
           setDraftAnswer('');
+          setJustification('');
         });
       } catch (caught) {
         if (cancelled) return;
@@ -94,12 +157,14 @@ export function useTutorSession() {
   useEffect(() => {
     if (!selectedClue || !sessionState) {
       setDraftAnswer('');
+      setJustification('');
       return;
     }
 
     const existing = sessionState.entries[selectedClue.id]?.answer ?? '';
     setDraftAnswer(existing);
-  }, [selectedClue, sessionState]);
+    setJustification('');
+  }, [selectedClue?.id]);
 
   const clueList = useMemo(() => (puzzle ? sortClues(puzzle.clues) : []), [puzzle]);
 
@@ -107,21 +172,15 @@ export function useTutorSession() {
     const nextMap: Record<string, string[]> = {};
 
     clueList.forEach((clue) => {
-      let { x, y } = clue;
-      for (let index = 0; index < clue.length; index += 1) {
+      iterateClueCells(clue, puzzle?.clues ?? {}).forEach(([x, y]) => {
         const key = `${x},${y}`;
         nextMap[key] ??= [];
         nextMap[key].push(clue.id);
-        if (clue.direction === 'Across') {
-          x += 1;
-        } else {
-          y += 1;
-        }
-      }
+      });
     });
 
     return nextMap;
-  }, [clueList]);
+  }, [clueList, puzzle]);
 
   const activeCells = useMemo(() => {
     const active = new Set<string>();
@@ -129,17 +188,11 @@ export function useTutorSession() {
       return active;
     }
 
-    let { x, y } = selectedClue;
-    for (let index = 0; index < selectedClue.length; index += 1) {
+    iterateClueCells(selectedClue, puzzle?.clues ?? {}).forEach(([x, y]) => {
       active.add(`${x},${y}`);
-      if (selectedClue.direction === 'Across') {
-        x += 1;
-      } else {
-        y += 1;
-      }
-    }
+    });
     return active;
-  }, [selectedClue]);
+  }, [selectedClue, puzzle]);
 
   const playableCells = useMemo(() => {
     if (!puzzle) {
@@ -155,15 +208,9 @@ export function useTutorSession() {
         clueNumbers[`${clue.x},${clue.y}`] = clueNumber;
       }
 
-      let { x, y } = clue;
-      for (let index = 0; index < clue.length; index += 1) {
+      iterateClueCells(clue, puzzle.clues).forEach(([x, y]) => {
         cells.add(`${x},${y}`);
-        if (clue.direction === 'Across') {
-          x += 1;
-        } else {
-          y += 1;
-        }
-      }
+      });
     });
 
     return { cells, clueNumbers };
@@ -199,6 +246,7 @@ export function useTutorSession() {
 
   async function refreshSession(nextSessionId: string) {
     const response = await fetchJson<SessionResponse>(`/api/sessions/${nextSessionId}`);
+    storeSessionId(response.sessionId);
     startTransition(() => {
       setSessionState(response.sessionState);
     });
@@ -250,11 +298,51 @@ export function useTutorSession() {
     try {
       await fetchJson(`/api/sessions/${sessionId}/entries`, {
         method: 'POST',
-        body: JSON.stringify({ clueId: selectedClue.id, answer: draftAnswer }),
+        body: JSON.stringify({ clueId: selectedClue.id, answer: draftAnswer, justification }),
       });
       await refreshSession(sessionId);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Unable to submit answer.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function acceptAnswer() {
+    if (!sessionId || !selectedClue) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await fetchJson(`/api/sessions/${sessionId}/entries/${selectedClue.id}/accept`, {
+        method: 'POST',
+        body: JSON.stringify({ answer: draftAnswer, justification }),
+      });
+      await refreshSession(sessionId);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Unable to accept answer.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function clearAnswer() {
+    if (!sessionId || !selectedClue) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await fetchJson(`/api/sessions/${sessionId}/entries/${selectedClue.id}`, {
+        method: 'DELETE',
+      });
+      setDraftAnswer('');
+      await refreshSession(sessionId);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Unable to clear answer.');
     } finally {
       setIsSubmitting(false);
     }
@@ -290,12 +378,16 @@ export function useTutorSession() {
     selectedClue,
     draftAnswer,
     setDraftAnswer,
+    justification,
+    setJustification,
     isLoading,
     isSubmitting,
     error,
     selectClue,
     selectCell,
     submitAnswer,
+    acceptAnswer,
+    clearAnswer,
     requestNextHint,
   };
 }

@@ -34,6 +34,13 @@ class EntryRecord(BaseModel):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+class RuntimeUsageRecord(BaseModel):
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cached_input_tokens: int = 0
+    requests: int = 0
+
+
 class SessionState(BaseModel):
     session_id: str
     puzzle_id: str
@@ -42,3 +49,4 @@ class SessionState(BaseModel):
     cells: dict[str, str] = Field(default_factory=dict)
     entries: dict[str, EntryRecord] = Field(default_factory=dict)
     clue_states: dict[str, ClueState] = Field(default_factory=dict)
+    runtime_usage: RuntimeUsageRecord = Field(default_factory=RuntimeUsageRecord)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import yaml
@@ -30,10 +31,18 @@ class PuzzleLoader:
                     id=clue_id,
                     direction=meta["direction"],
                     clue=raw["clue"],
-                    enum=raw["enum"],
+                    enum=raw.get("enum"),
                     length=meta["length"],
+                    answerLength=self._answer_length(raw.get("enum"), meta["length"]),
                     x=meta["x"],
                     y=meta["y"],
                     uncertain=meta.get("uncertain", False),
+                    linked_entries=raw.get("linked_entries"),
                 )
         return PuzzleDefinition(puzzle_id=puzzle_id, grid=grid, clues=clues)
+
+    def _answer_length(self, enum: str | None, fallback: int) -> int:
+        if not enum:
+            return fallback
+        numbers = [int(value) for value in re.findall(r"\d+", enum)]
+        return sum(numbers) if numbers else fallback

@@ -1,5 +1,5 @@
 export type Direction = 'Across' | 'Down';
-export type ClueStatus = 'untouched' | 'in_progress' | 'plausible' | 'confirmed' | 'conflict';
+export type ClueStatus = 'untouched' | 'in_progress' | 'plausible' | 'confirmed' | 'conflict' | 'forced';
 export type ValidationResult = 'confirmed' | 'plausible' | 'conflict';
 export type HintKind = 'clue_type' | 'structure' | 'wordplay_focus' | 'candidate_space' | 'answer_reveal';
 
@@ -15,11 +15,13 @@ export interface PuzzleClue {
   id: string;
   direction: Direction;
   clue: string;
-  enum: string;
+  enum?: string | null;
   length: number;
+  answer_length: number;
   x: number;
   y: number;
   uncertain?: boolean;
+  linked_entries?: string[] | null;
 }
 
 export interface PuzzleGrid {
@@ -61,12 +63,20 @@ export interface ClueState {
   validation?: ValidationRecord | null;
 }
 
+export interface RuntimeUsage {
+  input_tokens: number;
+  output_tokens: number;
+  cached_input_tokens: number;
+  requests: number;
+}
+
 export interface SessionState {
   selectedClueId: string | null;
   version: number;
   cells: Record<string, string>;
   entries: Record<string, EntryRecord>;
   clueStates: Record<string, ClueState>;
+  runtimeUsage: RuntimeUsage;
 }
 
 export interface PuzzleResponse {

@@ -1,0 +1,211 @@
+{
+  "width": 15,
+  "height": 15,
+  "clues": {
+    "1A": {
+      "x": 0,
+      "y": 0,
+      "length": 4,
+      "direction": "Across"
+    },
+    "1D": {
+      "x": 0,
+      "y": 0,
+      "length": 5,
+      "direction": "Down"
+    },
+    "2D": {
+      "x": 2,
+      "y": 0,
+      "length": 9,
+      "direction": "Down"
+    },
+    "3A": {
+      "x": 5,
+      "y": 0,
+      "length": 10,
+      "direction": "Across"
+    },
+    "4D": {
+      "x": 6,
+      "y": 0,
+      "length": 8,
+      "direction": "Down"
+    },
+    "5D": {
+      "x": 8,
+      "y": 0,
+      "length": 6,
+      "direction": "Down"
+    },
+    "6D": {
+      "x": 10,
+      "y": 0,
+      "length": 9,
+      "direction": "Down"
+    },
+    "7D": {
+      "x": 12,
+      "y": 0,
+      "length": 5,
+      "direction": "Down"
+    },
+    "8D": {
+      "x": 14,
+      "y": 0,
+      "length": 9,
+      "direction": "Down"
+    },
+    "9D": {
+      "x": 4,
+      "y": 1,
+      "length": 4,
+      "direction": "Down"
+    },
+    "10A": {
+      "x": 0,
+      "y": 2,
+      "length": 9,
+      "direction": "Across"
+    },
+    "11A": {
+      "x": 10,
+      "y": 2,
+      "length": 5,
+      "direction": "Across"
+    },
+    "12A": {
+      "x": 0,
+      "y": 4,
+      "length": 5,
+      "direction": "Across"
+    },
+    "13A": {
+      "x": 6,
+      "y": 4,
+      "length": 9,
+      "direction": "Across"
+    },
+    "14A": {
+      "x": 0,
+      "y": 6,
+      "length": 8,
+      "direction": "Across"
+    },
+    "14D": {
+      "x": 0,
+      "y": 6,
+      "length": 9,
+      "direction": "Down"
+    },
+    "15D": {
+      "x": 4,
+      "y": 6,
+      "length": 9,
+      "direction": "Down"
+    },
+    "16A": {
+      "x": 9,
+      "y": 6,
+      "length": 6,
+      "direction": "Across"
+    },
+    "17D": {
+      "x": 12,
+      "y": 6,
+      "length": 9,
+      "direction": "Down"
+    },
+    "18D": {
+      "x": 8,
+      "y": 7,
+      "length": 8,
+      "direction": "Down"
+    },
+    "19A": {
+      "x": 0,
+      "y": 8,
+      "length": 6,
+      "direction": "Across"
+    },
+    "20A": {
+      "x": 7,
+      "y": 8,
+      "length": 8,
+      "direction": "Across"
+    },
+    "21D": {
+      "x": 6,
+      "y": 9,
+      "length": 6,
+      "direction": "Down"
+    },
+    "22A": {
+      "x": 0,
+      "y": 10,
+      "length": 9,
+      "direction": "Across"
+    },
+    "23D": {
+      "x": 2,
+      "y": 10,
+      "length": 5,
+      "direction": "Down"
+    },
+    "24A": {
+      "x": 10,
+      "y": 10,
+      "length": 5,
+      "direction": "Across"
+    },
+    "24D": {
+      "x": 10,
+      "y": 10,
+      "length": 4,
+      "direction": "Down"
+    },
+    "25D": {
+      "x": 14,
+      "y": 10,
+      "length": 5,
+      "direction": "Down"
+    },
+    "26A": {
+      "x": 0,
+      "y": 12,
+      "length": 5,
+      "direction": "Across"
+    },
+    "27A": {
+      "x": 6,
+      "y": 12,
+      "length": 9,
+      "direction": "Across"
+    },
+    "28A": {
+      "x": 0,
+      "y": 14,
+      "length": 10,
+      "direction": "Across"
+    },
+    "29A": {
+      "x": 11,
+      "y": 14,
+      "length": 4,
+      "direction": "Across"
+    }
+  },
+  "_debug": {
+    "source": "pdf-vector",
+    "grid_transform": [
+      0.9375,
+      0.0,
+      0.0,
+      0.9375,
+      540.625,
+      262.5
+    ],
+    "white_cell_count": 162,
+    "numbered_cells": 29
+  }
+}

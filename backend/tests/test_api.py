@@ -14,15 +14,19 @@ BACKEND_ROOT = REPO_ROOT / 'backend'
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
+from app.runtime.payloads import build_next_hint_request  # noqa: E402
 from app.runtime.adapter import (  # noqa: E402
     CommandRuntimeGateway,
     GatewaySemanticAdjudicator,
     HeuristicRuntimeAdapter,
+    StubRuntimeAdapter,
 )
 from app.services.grid_engine import GridEngine  # noqa: E402
 from app.services.puzzle_loader import PuzzleLoader  # noqa: E402
 from app.services.session_service import SessionService  # noqa: E402
 from app.stores.session_store import SessionStore  # noqa: E402
+from app.models.session import HintRecord  # noqa: E402
+from app.models.common import ValidationResult  # noqa: E402
 
 
 class BackendServiceTests(unittest.TestCase):
@@ -65,6 +69,96 @@ class BackendServiceTests(unittest.TestCase):
         self.assertIn('1D', affected)
         self.assertEqual(patterns['1D'], 'S......')
 
+    def test_pattern_change_resets_hints_above_level_two_for_unsolved_clues(self) -> None:
+        session = self.service.create_session(self.puzzle)
+        for _ in range(4):
+            session, _ = self.service.next_hint(self.puzzle, session.session_id, '1D')
+        self.assertEqual(session.clue_states['1D'].hint_level_shown, 4)
+        self.assertEqual(len(session.clue_states['1D'].hints), 4)
+
+        updated_session, _, _, _ = self.service.submit_entry(
+            self.puzzle,
+            session.session_id,
+            '1A',
+            'SUPPOSE',
+        )
+        self.assertEqual(updated_session.clue_states['1D'].current_pattern, 'S......')
+        self.assertEqual(updated_session.clue_states['1D'].hint_level_shown, 2)
+        self.assertEqual([hint.level for hint in updated_session.clue_states['1D'].hints], [1, 2])
+
+    def test_revealed_answer_is_not_rejected_as_conflict(self) -> None:
+        class RejectingAdapter(StubRuntimeAdapter):
+            def validate_answer(self, clue, proposed_answer, pattern_before, puzzle=None, session=None, solver_justification=None):
+                return {
+                    'clueId': clue.id,
+                    'result': ValidationResult.CONFLICT,
+                    'reason': 'semantic reject',
+                    'confidence': 0.2,
+                }
+
+        service = SessionService(SessionStore(self.repo_root / 'revealed-answer'), GridEngine(), RejectingAdapter())
+        session = service.create_session(self.puzzle)
+        session.clue_states['4D'].hints.append(HintRecord(level=5, kind='answer_reveal', text="ESTABLISH. It comes from his table's wobbly."))
+        session.clue_states['4D'].hint_level_shown = 5
+        service.store.save(session)
+
+        result = service.check_answer(self.puzzle, session.session_id, '4D', 'ESTABLISH')
+        self.assertEqual(result['result'].value, 'plausible')
+        self.assertIn('already revealed', result['reason'].lower())
+
+    def test_level_five_hint_is_used_as_fallback_justification(self) -> None:
+        captured: dict[str, str | None] = {}
+
+        class CapturingAdapter(StubRuntimeAdapter):
+            def validate_answer(self, clue, proposed_answer, pattern_before, puzzle=None, session=None, solver_justification=None):
+                captured['justification'] = solver_justification
+                return super().validate_answer(clue, proposed_answer, pattern_before, puzzle, session, solver_justification)
+
+        service = SessionService(SessionStore(self.repo_root / 'fallback-justification'), GridEngine(), CapturingAdapter())
+        session = service.create_session(self.puzzle)
+        session.clue_states['4D'].hints.append(
+            HintRecord(level=5, kind='answer_reveal', text="ESTABLISH. It comes from his table's wobbly.")
+        )
+        session.clue_states['4D'].hint_level_shown = 5
+        service.store.save(session)
+
+        service.check_answer(self.puzzle, session.session_id, '4D', 'ESTABLISH')
+        self.assertIn('ESTABLISH', captured['justification'] or '')
+
+    def test_level_five_hint_is_terminal(self) -> None:
+        session = self.service.create_session(self.puzzle)
+        for _ in range(5):
+            session, result = self.service.next_hint(self.puzzle, session.session_id, '4D')
+        self.assertEqual(result['hintLevel'], 5)
+        self.assertEqual(len(session.clue_states['4D'].hints), 5)
+
+        repeated_session, repeated_result = self.service.next_hint(self.puzzle, session.session_id, '4D')
+        self.assertEqual(repeated_result['hintLevel'], 5)
+        self.assertEqual(len(repeated_session.clue_states['4D'].hints), 5)
+        self.assertEqual(repeated_result['text'], repeated_session.clue_states['4D'].hints[-1].text)
+
+    def test_runtime_usage_accumulates_on_hint_and_check(self) -> None:
+        runtime_script = self._write_runtime_script()
+        gateway = CommandRuntimeGateway([sys.executable, str(runtime_script)], REPO_ROOT)
+        service = SessionService(
+            SessionStore(self.repo_root / 'runtime-usage'),
+            GridEngine(),
+            HeuristicRuntimeAdapter(REPO_ROOT, semantic_adjudicator=GatewaySemanticAdjudicator(gateway), runtime_gateway=gateway),
+        )
+        session = service.create_session(self.puzzle)
+        session, _ = service.next_hint(self.puzzle, session.session_id, '4D')
+        self.assertEqual(session.runtime_usage.input_tokens, 120)
+        self.assertEqual(session.runtime_usage.cached_input_tokens, 30)
+        self.assertEqual(session.runtime_usage.output_tokens, 12)
+        self.assertEqual(session.runtime_usage.requests, 1)
+
+        service.check_answer(self.puzzle, session.session_id, '4D', 'ESTABLISH')
+        reloaded = service.get_session(session.session_id)
+        self.assertEqual(reloaded.runtime_usage.input_tokens, 220)
+        self.assertEqual(reloaded.runtime_usage.cached_input_tokens, 50)
+        self.assertEqual(reloaded.runtime_usage.output_tokens, 20)
+        self.assertEqual(reloaded.runtime_usage.requests, 2)
+
     def test_next_hint_increments_history(self) -> None:
         session = self.service.create_session(self.puzzle)
         updated_session, result = self.service.next_hint(self.puzzle, session.session_id, '4D')
@@ -73,6 +167,54 @@ class BackendServiceTests(unittest.TestCase):
         self.assertIn('anagram', result['text'].lower())
         self.assertEqual(updated_session.clue_states['4D'].hint_level_shown, 1)
         self.assertEqual(len(updated_session.clue_states['4D'].hints), 1)
+
+    def test_accept_entry_marks_clue_forced(self) -> None:
+        session = self.service.create_session(self.puzzle)
+        accepted_session, _, patterns, _ = self.service.accept_entry(
+            self.puzzle,
+            session.session_id,
+            '1A',
+            'SUPPOSE',
+            'I want to keep this for now.',
+        )
+        self.assertEqual(accepted_session.clue_states['1A'].status.value, 'forced')
+        self.assertEqual(accepted_session.clue_states['1A'].validation.reason, 'Accepted by user override: I want to keep this for now.')
+        self.assertEqual(patterns['1A'], 'SUPPOSE')
+
+    def test_clear_entry_rebuilds_grid_from_remaining_answers(self) -> None:
+        session = self.service.create_session(self.puzzle)
+        session, _, _, _ = self.service.submit_entry(self.puzzle, session.session_id, '1A', 'SUPPOSE')
+        session, _, _, _ = self.service.submit_entry(self.puzzle, session.session_id, '1D', 'SANDALS')
+        cleared_session, affected, patterns, changed = self.service.clear_entry(self.puzzle, session.session_id, '1A')
+        self.assertNotIn('1A', cleared_session.entries)
+        self.assertEqual(cleared_session.clue_states['1A'].validation, None)
+        self.assertEqual(patterns['1A'], 'S......')
+        self.assertEqual(patterns['1D'], 'SANDALS')
+        self.assertIn('1D', affected)
+        self.assertIn('1A', affected)
+        self.assertEqual(changed['1,0'], '')
+
+    def test_conflicting_submission_does_not_update_grid(self) -> None:
+        session = self.service.create_session(self.puzzle)
+        updated_session, _, patterns, _ = self.service.submit_entry(
+            self.puzzle,
+            session.session_id,
+            '1A',
+            'SUPPOSE',
+        )
+        self.assertEqual(patterns['1A'], 'SUPPOSE')
+        conflicted_session, affected, patterns, changed = self.service.submit_entry(
+            self.puzzle,
+            updated_session.session_id,
+            '1A',
+            'ZZZZZZZ',
+        )
+        self.assertEqual(conflicted_session.clue_states['1A'].validation.result.value, 'conflict')
+        self.assertEqual(conflicted_session.clue_states['1A'].current_pattern, 'SUPPOSE')
+        self.assertEqual(conflicted_session.entries['1A'].answer, 'SUPPOSE')
+        self.assertEqual(affected, [])
+        self.assertEqual(changed, {})
+        self.assertEqual(patterns['1A'], 'SUPPOSE')
 
     def test_check_answer_conflict(self) -> None:
         session = self.service.create_session(self.puzzle)
@@ -85,6 +227,68 @@ class BackendServiceTests(unittest.TestCase):
         result = self.service.check_answer(self.puzzle, session.session_id, '4D', 'ESTABLISH')
         self.assertEqual(result['result'].value, 'confirmed')
         self.assertIn('anagram', result['reason'].lower())
+
+
+
+
+    def test_proper_noun_answer_can_be_plausible_without_wordlist_hit(self) -> None:
+        puzzle = self.loader.load_puzzle('prize-cryptic-83730')
+        clue = puzzle.clues['9D']
+        adapter = HeuristicRuntimeAdapter(REPO_ROOT)
+        result = adapter.validate_answer(clue, 'LUND', 'LUND')
+        self.assertEqual(result['result'].value, 'plausible')
+        self.assertIn('proper noun', result['reason'].lower())
+
+    def test_multiword_enum_uses_segmented_word_check(self) -> None:
+        puzzle = self.loader.load_puzzle('prize-cryptic-83730')
+        clue = puzzle.clues['10A']
+        adapter = HeuristicRuntimeAdapter(REPO_ROOT)
+        joined = adapter.validate_answer(clue, 'REDGUARDS', '.' * clue.answer_length)
+        spaced = adapter.validate_answer(clue, 'RED GUARDS', '.' * clue.answer_length)
+        self.assertEqual(joined['result'].value, 'plausible')
+        self.assertEqual(spaced['result'].value, 'plausible')
+        self.assertIn('RED + GUARDS', joined['reason'])
+
+    def test_composite_clue_propagates_status_to_linked_entries(self) -> None:
+        puzzle = self.loader.load_puzzle('prize-cryptic-83730')
+        service = SessionService(
+            SessionStore(self.repo_root / 'composite-status'),
+            GridEngine(),
+            StubRuntimeAdapter(),
+        )
+        session = service.create_session(puzzle)
+        updated_session, _, _, _ = service.submit_entry(
+            puzzle,
+            session.session_id,
+            '26A',
+            'ABCDEFGHIJKLMNOPQRST',
+        )
+        self.assertEqual(updated_session.clue_states['26A'].status.value, 'plausible')
+        self.assertEqual(updated_session.clue_states['13A'].status.value, 'plausible')
+        self.assertEqual(updated_session.clue_states['21D'].status.value, 'plausible')
+
+    def test_composite_clue_spans_linked_entries(self) -> None:
+        puzzle = self.loader.load_puzzle('prize-cryptic-83730')
+        service = SessionService(
+            SessionStore(self.repo_root / 'composite'),
+            GridEngine(),
+            StubRuntimeAdapter(),
+        )
+        session = service.create_session(puzzle)
+        self.assertEqual(session.clue_states['26A'].current_pattern, '.' * 20)
+        updated_session, _, patterns, changed = service.submit_entry(
+            puzzle,
+            session.session_id,
+            '26A',
+            'ABCDEFGHIJKLMNOPQRST',
+        )
+        self.assertEqual(patterns['26A'], 'ABCDEFGHIJKLMNOPQRST')
+        self.assertEqual(patterns['13A'], 'FGHIJKLMN')
+        self.assertEqual(patterns['21D'], 'OPQRST')
+        self.assertEqual(changed['0,12'], 'A')
+        self.assertEqual(changed['6,4'], 'F')
+        self.assertEqual(changed['6,9'], 'O')
+        self.assertEqual(updated_session.entries['26A'].answer, 'ABCDEFGHIJKLMNOPQRST')
 
     def test_runtime_gateway_can_supply_next_hint(self) -> None:
         runtime_script = self._write_runtime_script()
@@ -113,6 +317,36 @@ class BackendServiceTests(unittest.TestCase):
         self.assertEqual(result['result'].value, 'plausible')
         self.assertIn('runtime semantic review', result['reason'].lower())
 
+    def test_reference_context_includes_linked_entries_and_solved_references(self) -> None:
+        puzzle = self.loader.load_puzzle('prize-cryptic-83730')
+        service = SessionService(
+            SessionStore(self.repo_root / 'reference-context'),
+            GridEngine(),
+            StubRuntimeAdapter(),
+        )
+        session = service.create_session(puzzle)
+        session.entries['19A'] = service.grid_engine.make_entry_record('RICK', 'confirmed')
+        session.entries['9D'] = service.grid_engine.make_entry_record('LUND', 'confirmed')
+        service.store.save(session)
+        updated = service.get_session(session.session_id)
+        adapter = HeuristicRuntimeAdapter(REPO_ROOT)
+        clue = puzzle.clues['26A']
+        analysis = adapter._analyze_clue(clue, updated.clue_states['26A'].current_pattern)
+        request = build_next_hint_request(
+            puzzle,
+            updated,
+            clue,
+            updated.clue_states['26A'].current_pattern,
+            updated.clue_states['26A'].hint_level_shown,
+            analysis,
+        )
+        self.assertEqual(request.context.linkedEntries, ['26A', '13A', '21D'])
+        referenced = {item.clueId: item for item in request.context.referencedClues}
+        self.assertIn('19A', referenced)
+        self.assertIn('9D', referenced)
+        self.assertEqual(referenced['19A'].answer, 'RICK')
+        self.assertEqual(referenced['9D'].answer, 'LUND')
+
     def test_codex_wrapper_translates_jsonl_output(self) -> None:
         fake_bin = self.repo_root / 'bin'
         fake_bin.mkdir()
@@ -138,6 +372,7 @@ class BackendServiceTests(unittest.TestCase):
                 else:
                     payload = {'clueId': '4D', 'hintLevel': 2, 'kind': 'structure', 'text': f'Wrapper next hint via {model}/{reasoning}.', 'confidence': 0.6}
                 print(json.dumps({'msg': {'type': 'task_complete', 'last_agent_message': json.dumps(payload)}}))
+                print(json.dumps({'type': 'turn.completed', 'usage': {'input_tokens': 321, 'cached_input_tokens': 45, 'output_tokens': 67}}))
                 '''
             ).strip(),
             encoding='utf-8',
@@ -182,6 +417,9 @@ class BackendServiceTests(unittest.TestCase):
         self.assertEqual(decoded['hintLevel'], 2)
         self.assertIn('test-reasoner-model', decoded['text'])
         self.assertIn('/low', decoded['text'])
+        self.assertEqual(decoded['_usage']['input_tokens'], 321)
+        self.assertEqual(decoded['_usage']['cached_input_tokens'], 45)
+        self.assertEqual(decoded['_usage']['output_tokens'], 67)
 
     def test_loader_exposes_puzzle_definition(self) -> None:
         self.assertEqual(self.puzzle.puzzle_id, 'cryptic-2026-03-03')
@@ -205,12 +443,14 @@ class BackendServiceTests(unittest.TestCase):
                         'kind': 'structure',
                         'text': 'Runtime says the definition is at the start.',
                         'confidence': 0.66,
+                        '_usage': {'input_tokens': 120, 'cached_input_tokens': 30, 'output_tokens': 12},
                     }))
                 elif operation == 'semantic_judgement':
                     print(json.dumps({
                         'result': 'plausible',
                         'reason': 'Runtime semantic review says the mechanical parse is good but definition fit needs confirmation.',
                         'confidence': 0.42,
+                        '_usage': {'input_tokens': 100, 'cached_input_tokens': 20, 'output_tokens': 8},
                     }))
                 else:
                     print(json.dumps({'result': 'conflict', 'reason': 'unsupported operation'}))

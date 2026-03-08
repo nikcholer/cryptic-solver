@@ -14,12 +14,14 @@ class ClueStatus(str, Enum):
     PLAUSIBLE = "plausible"
     CONFIRMED = "confirmed"
     CONFLICT = "conflict"
+    FORCED = "forced"
 
 
 class ValidationResult(str, Enum):
     CONFIRMED = "confirmed"
     PLAUSIBLE = "plausible"
     CONFLICT = "conflict"
+    FORCED = "forced"
 
 
 class HintKind(str, Enum):

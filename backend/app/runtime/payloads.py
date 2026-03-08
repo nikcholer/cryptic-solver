@@ -1,32 +1,40 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
-from app.models.puzzle import PuzzleClue
+from app.models.puzzle import PuzzleClue, PuzzleDefinition
+from app.models.session import SessionState
 from app.runtime.schemas import (
     MechanicalResult,
     NextHintContext,
     NextHintRequest,
+    ReferencedClueContext,
     SemanticJudgementContext,
     SemanticJudgementRequest,
 )
 
 SKILL_NAME = 'cryptic-crossword-solver'
+REFERENCE_RE = re.compile(r"\b(\d+)\s*(Across|Down)\b", re.IGNORECASE)
 
 
 def build_semantic_judgement_request(
+    puzzle: PuzzleDefinition,
+    session: SessionState,
     clue: PuzzleClue,
     analysis: Any,
     answer: str,
     mechanical_result: dict[str, object],
+    solver_justification: str | None = None,
 ) -> SemanticJudgementRequest:
+    linked_entries, referenced_clues = build_reference_context(puzzle, session, clue)
     return SemanticJudgementRequest(
         skill=SKILL_NAME,
         context=SemanticJudgementContext(
             clueId=clue.id,
             clue=clue.clue,
             enumeration=clue.enum,
-            length=clue.length,
+            length=clue.answer_length,
             proposedAnswer=answer,
             definitionText=analysis.definition_text,
             definitionSide=analysis.definition_side,
@@ -34,6 +42,9 @@ def build_semantic_judgement_request(
             indicator=analysis.indicator,
             fodderText=analysis.fodder_text,
             solverCandidates=analysis.solver_candidates,
+            linkedEntries=linked_entries,
+            referencedClues=referenced_clues,
+            solverJustification=solver_justification or None,
             mechanicalResult=MechanicalResult(
                 result=_enum_value(mechanical_result.get('result')),
                 reason=str(mechanical_result.get('reason', '')),
@@ -44,11 +55,14 @@ def build_semantic_judgement_request(
 
 
 def build_next_hint_request(
+    puzzle: PuzzleDefinition,
+    session: SessionState,
     clue: PuzzleClue,
     pattern: str,
     hint_level_already_shown: int,
     analysis: Any,
 ) -> NextHintRequest:
+    linked_entries, referenced_clues = build_reference_context(puzzle, session, clue)
     return NextHintRequest(
         skill=SKILL_NAME,
         context=NextHintContext(
@@ -63,8 +77,38 @@ def build_next_hint_request(
             indicator=analysis.indicator,
             fodderText=analysis.fodder_text,
             solverCandidates=analysis.solver_candidates,
+            linkedEntries=linked_entries,
+            referencedClues=referenced_clues,
         ),
     )
+
+
+def build_reference_context(
+    puzzle: PuzzleDefinition,
+    session: SessionState,
+    clue: PuzzleClue,
+) -> tuple[list[str], list[ReferencedClueContext]]:
+    linked_entries = list(clue.linked_entries or [])
+    referenced: list[ReferencedClueContext] = []
+    seen: set[str] = set()
+    for number, direction in REFERENCE_RE.findall(clue.clue):
+        clue_id = f"{int(number)}{'A' if direction.lower() == 'across' else 'D'}"
+        if clue_id in seen or clue_id == clue.id:
+            continue
+        seen.add(clue_id)
+        if clue_id not in puzzle.clues:
+            continue
+        referenced_clue = puzzle.clues[clue_id]
+        entry = session.entries.get(clue_id)
+        referenced.append(
+            ReferencedClueContext(
+                clueId=clue_id,
+                clue=referenced_clue.clue,
+                enumeration=referenced_clue.enum,
+                answer=entry.answer if entry else None,
+            )
+        )
+    return linked_entries, referenced
 
 
 def _enum_value(value: object) -> str:

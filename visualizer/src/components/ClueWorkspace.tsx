@@ -4,8 +4,12 @@ interface ClueWorkspaceProps {
   clue: PuzzleClue | null;
   clueState: ClueState | null;
   draftAnswer: string;
+  justification: string;
   onDraftAnswerChange: (nextValue: string) => void;
+  onJustificationChange: (nextValue: string) => void;
   onSubmitAnswer: () => void;
+  onAcceptAnswer: () => void;
+  onClearAnswer: () => void;
   onRequestHint: () => void;
   isBusy: boolean;
 }
@@ -14,8 +18,12 @@ export function ClueWorkspace({
   clue,
   clueState,
   draftAnswer,
+  justification,
   onDraftAnswerChange,
+  onJustificationChange,
   onSubmitAnswer,
+  onAcceptAnswer,
+  onClearAnswer,
   onRequestHint,
   isBusy,
 }: ClueWorkspaceProps) {
@@ -42,9 +50,13 @@ export function ClueWorkspace({
 
       <p className="workspace-clue-text">{clue.clue}</p>
       <div className="workspace-meta-row">
-        <span className="workspace-enum">{clue.enum}</span>
-        <span className="workspace-pattern">Pattern: {clueState?.current_pattern ?? '.'.repeat(clue.length)}</span>
+        {clue.enum ? <span className="workspace-enum">{clue.enum}</span> : null}
+        <span className="workspace-pattern">Pattern: {clueState?.current_pattern ?? '.'.repeat(clue.answer_length)}</span>
       </div>
+
+      {clue.linked_entries && clue.linked_entries.length > 1 ? (
+        <p className="workspace-linked">Linked entries: {clue.linked_entries.join(' -> ')}</p>
+      ) : null}
 
       <label className="answer-label" htmlFor="clue-answer-input">
         Your answer
@@ -66,10 +78,39 @@ export function ClueWorkspace({
         >
           Check answer
         </button>
+        <button
+          type="button"
+          className="action-btn"
+          onClick={onClearAnswer}
+          disabled={isBusy || ((!clueState?.current_pattern || !clueState.current_pattern.replace(/\./g, '').length) && !draftAnswer.trim().length)}
+        >
+          Clear answer
+        </button>
         <button type="button" className="action-btn" onClick={onRequestHint} disabled={isBusy}>
           Next hint
         </button>
       </div>
+
+      <label className="answer-label" htmlFor="clue-justification-input">
+        Why I think this works (optional)
+      </label>
+      <textarea
+        id="clue-justification-input"
+        value={justification}
+        onChange={(event) => onJustificationChange(event.target.value)}
+        className="answer-justification"
+        placeholder="Explain your parse, definition reading, or why the clue seems to fit."
+        disabled={isBusy}
+        rows={3}
+      />
+
+      {clueState?.validation?.result === 'conflict' && draftAnswer.trim().length > 0 ? (
+        <div className="override-row">
+          <button type="button" className="action-btn override" onClick={onAcceptAnswer} disabled={isBusy}>
+            Accept anyway
+          </button>
+        </div>
+      ) : null}
 
       {clueState?.validation && (
         <div className={`validation-card ${clueState.validation.result}`}>

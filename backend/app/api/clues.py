@@ -23,7 +23,7 @@ def check_answer(
         puzzle = puzzle_loader.load_puzzle(session.puzzle_id)
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail="session_not_found") from exc
-    result = session_service.check_answer(puzzle, session_id, clue_id, request.answer)
+    result = session_service.check_answer(puzzle, session_id, clue_id, request.answer, request.justification)
     return CheckAnswerResponse(clueId=clue_id, result=result["result"], reason=result["reason"])
 
 

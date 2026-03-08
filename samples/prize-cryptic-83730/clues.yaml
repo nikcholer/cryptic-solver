@@ -1,0 +1,100 @@
+across:
+  1A:
+    clue: Downright dull
+    enum: (4)
+  3A:
+    clue: Here peers sit, in Lords, returned to power
+    enum: (10)
+  10A:
+    clue: Maoists argued furiously blocking road south
+    enum: (3,6)
+  11A:
+    clue: Refrain from church when finally contrite
+    enum: (5)
+  12A:
+    clue: Leader of soldiers, given news, means to fight
+    enum: (5)
+  13A:
+    clue: See 26 Across
+  14A:
+    clue: Soused Democrat forced to renounce whiskey
+    enum: (8)
+  16A:
+    clue: Look old taking book inside summerhouse
+    enum: (6)
+  19A:
+    clue: Rick in Casablanca and Abilene endlessly drunk
+    enum: (6)
+  20A:
+    clue: Horrible Gaultier tie
+    enum: (8)
+  22A:
+    clue: Top meal without starter succeeded in test
+    enum: (9)
+  24A:
+    clue: Where the young go crazy
+    enum: (5)
+  26A:
+    clue: South Korean yogi liked nutty 19 Across's line for 9 Down
+    linked_entries:
+    - 26A
+    - 13A
+    - 21D
+    enum: (5,7,2,3,3)
+  27A:
+    clue: Reptile, one ruling civil contingencies committee
+    enum: (4,5)
+  28A:
+    clue: Musician knocks poet capturing hearts
+    enum: (10)
+  29A:
+    clue: Olympian from Egyptian port returned
+    enum: (4)
+down:
+  1D:
+    clue: Shoots game
+    enum: (5)
+  2D:
+    clue: Princess tied to rock stars in group
+    enum: (9)
+  4D:
+    clue: Proclaimed leader corrupt in high definition!
+    enum: (8)
+  5D:
+    clue: Doctor on boat in capital
+    enum: (6)
+  6D:
+    clue: Ena holding youngster eats a hot snack
+    enum: (9)
+  7D:
+    clue: 'No serious accident: police initially called'
+    enum: (5)
+  8D:
+    clue: Time passed with that European card game
+    enum: (6-3)
+  9D:
+    clue: Ilsa in Casablanca, Lima and in Berlin
+    enum: (4)
+  14D:
+    clue: Libertine in uniform somehow breached walls
+    enum: (9)
+  15D:
+    clue: Differences in Nicaraguan rebels crossing street
+    enum: (9)
+  17D:
+    clue: Just English left on rising Italian island
+    enum: (9)
+  18D:
+    clue: Detectives wait on southern swells
+    enum: (8)
+  21D:
+    clue: See 26 Across
+  23D:
+    clue: Old man covers chest in warm coat
+    enum: (5)
+  24D:
+    clue: Fairy Liquid's top removed from bottle
+    enum: (4)
+  25D:
+    clue: Wait up to welcome eastern poet
+    enum: (5)

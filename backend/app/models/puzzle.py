@@ -17,11 +17,13 @@ class PuzzleClue(BaseModel):
     id: str
     direction: Direction
     clue: str
-    enum: str = Field(alias="enum")
+    enum: str | None = Field(default=None, alias="enum")
     length: int
+    answer_length: int = Field(alias="answerLength")
     x: int
     y: int
     uncertain: bool = False
+    linked_entries: list[str] | None = None
 
 
 class PuzzleGrid(BaseModel):

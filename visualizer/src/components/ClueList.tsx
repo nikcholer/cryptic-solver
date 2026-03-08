@@ -33,14 +33,14 @@ export function ClueList({
                 <div className="crw-clue-header">
                   <span className="clue-id">{clue.id}</span>
                   <span className="clue-text">
-                    {clue.clue} <span className="clue-meta">{clue.enum}</span>
+                    {clue.clue}{clue.enum ? <span className="clue-meta"> {clue.enum}</span> : null}
                   </span>
                 </div>
                 <div className="crw-clue-state-row">
                   <span className={`clue-status-badge ${clueState?.status ?? 'untouched'}`}>
                     {clueState?.status?.replace('_', ' ') ?? 'untouched'}
                   </span>
-                  <span className="clue-pattern">{clueState?.current_pattern ?? '.'.repeat(clue.length)}</span>
+                  <span className="clue-pattern">{clueState?.current_pattern ?? '.'.repeat(clue.answer_length)}</span>
                   {hintCount > 0 && <span className="hint-pill">{hintCount} hint{hintCount === 1 ? '' : 's'}</span>}
                 </div>
               </button>
