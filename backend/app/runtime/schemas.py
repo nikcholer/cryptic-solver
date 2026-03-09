@@ -97,6 +97,7 @@ class SemanticJudgementResponse(BaseModel):
     result: Literal['confirmed', 'plausible', 'conflict']
     reason: str
     confidence: float | None = None
+    symbolicFollowup: str | None = None
 
 
 

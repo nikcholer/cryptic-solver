@@ -1,4 +1,5 @@
 import type { ClueState, PuzzleClue } from '../types';
+import { formatStatus } from '../format';
 
 interface ClueListProps {
   title: string;
@@ -38,7 +39,7 @@ export function ClueList({
                 </div>
                 <div className="crw-clue-state-row">
                   <span className={`clue-status-badge ${clueState?.status ?? 'untouched'}`}>
-                    {clueState?.status?.replace('_', ' ') ?? 'untouched'}
+                    {formatStatus(clueState?.status ?? 'untouched')}
                   </span>
                   <span className="clue-pattern">{clueState?.current_pattern ?? '.'.repeat(clue.answer_length)}</span>
                   {hintCount > 0 && <span className="hint-pill">{hintCount} hint{hintCount === 1 ? '' : 's'}</span>}

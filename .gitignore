@@ -16,5 +16,8 @@ parse_clues.py
 .DS_Store
 Thumbs.db
 
+# Session data (runtime artefacts, not source)
+backend_data/sessions/
+
 # Build artifacts
 *.skill

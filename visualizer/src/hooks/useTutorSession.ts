@@ -1,8 +1,6 @@
-import { startTransition, useEffect, useMemo, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 import type {
-  CreateSessionResponse,
   GridCell,
-  PuzzleClue,
   PuzzleDefinition,
   PuzzleListResponse,
   PuzzleResponse,
@@ -10,89 +8,11 @@ import type {
   SessionState,
   ThesaurusLookupResponse,
 } from '../types';
+import { fetchJson, fetchFormJson } from '../api';
+import { getStoredSessionId, storeSessionId } from '../sessionStorage';
+import { iterateClueCells, sortClues } from '../gridUtils';
 
 const DEFAULT_PUZZLE_ID = import.meta.env.VITE_PUZZLE_ID ?? 'cryptic-2026-03-03';
-
-function sessionStorageKey(puzzleId: string): string {
-  return `cryptic-tutor-session:${puzzleId}`;
-}
-
-async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
-  const response = await fetch(input, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers ?? {}),
-    },
-  });
-
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(detail || `${response.status} ${response.statusText}`);
-  }
-
-  return (await response.json()) as T;
-}
-
-function getStoredSessionId(puzzleId: string): string | null {
-  try {
-    return window.localStorage.getItem(sessionStorageKey(puzzleId));
-  } catch {
-    return null;
-  }
-}
-
-function storeSessionId(puzzleId: string, sessionId: string | null): void {
-  try {
-    const key = sessionStorageKey(puzzleId);
-    if (sessionId) {
-      window.localStorage.setItem(key, sessionId);
-    } else {
-      window.localStorage.removeItem(key);
-    }
-  } catch {
-    // Ignore storage issues and continue with ephemeral sessions.
-  }
-}
-
-async function fetchFormJson<T>(input: RequestInfo, body: FormData): Promise<T> {
-  const response = await fetch(input, { method: 'POST', body });
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(detail || `${response.status} ${response.statusText}`);
-  }
-  return (await response.json()) as T;
-}
-
-function iterateClueCells(clue: PuzzleClue, clues: Record<string, PuzzleClue>): Array<[number, number]> {
-  const cells: Array<[number, number]> = [];
-  const segments = clue.linked_entries?.length
-    ? clue.linked_entries.map((clueId) => clues[clueId]).filter((value): value is PuzzleClue => Boolean(value))
-    : [clue];
-
-  segments.forEach((segment) => {
-    let { x, y } = segment;
-    for (let index = 0; index < segment.length; index += 1) {
-      cells.push([x, y]);
-      if (segment.direction === 'Across') {
-        x += 1;
-      } else {
-        y += 1;
-      }
-    }
-  });
-
-  return cells;
-}
-
-function sortClues(clues: Record<string, PuzzleClue>) {
-  return Object.values(clues).sort((left, right) => {
-    const numLeft = Number.parseInt(left.id, 10);
-    const numRight = Number.parseInt(right.id, 10);
-    if (numLeft !== numRight) return numLeft - numRight;
-    return left.direction.localeCompare(right.direction);
-  });
-}
 
 export function useTutorSession() {
   const [availablePuzzleIds, setAvailablePuzzleIds] = useState<string[]>([]);
@@ -108,6 +28,25 @@ export function useTutorSession() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const withSubmit = useCallback(
+    (fallbackMessage: string, action: () => Promise<void>) => {
+      return async () => {
+        setIsSubmitting(true);
+        setError(null);
+        try {
+          await action();
+        } catch (caught) {
+          setError(caught instanceof Error ? caught.message : fallbackMessage);
+        } finally {
+          setIsSubmitting(false);
+        }
+      };
+    },
+    [],
+  );
+
+  // -- Bootstrap: load puzzle list, puzzle definition, and session ---------
+
   useEffect(() => {
     let cancelled = false;
 
@@ -119,7 +58,7 @@ export function useTutorSession() {
           fetchJson<PuzzleListResponse>('/api/puzzles'),
           fetchJson<PuzzleResponse>(`/api/puzzles/${currentPuzzleId}`),
         ]);
-        let sessionResponse: SessionResponse | CreateSessionResponse | null = null;
+        let sessionResponse: SessionResponse | null = null;
         const storedSessionId = getStoredSessionId(currentPuzzleId);
 
         if (storedSessionId) {
@@ -136,7 +75,7 @@ export function useTutorSession() {
         }
 
         if (!sessionResponse) {
-          sessionResponse = await fetchJson<CreateSessionResponse>('/api/sessions', {
+          sessionResponse = await fetchJson<SessionResponse>('/api/sessions', {
             method: 'POST',
             body: JSON.stringify({ puzzleId: currentPuzzleId }),
           });
@@ -169,6 +108,8 @@ export function useTutorSession() {
       cancelled = true;
     };
   }, [currentPuzzleId]);
+
+  // -- Derived state -------------------------------------------------------
 
   const selectedClue = useMemo(() => {
     if (!puzzle || !sessionState?.selectedClueId) {
@@ -274,6 +215,8 @@ export function useTutorSession() {
   const acrossClues = clueList.filter((clue) => clue.direction === 'Across');
   const downClues = clueList.filter((clue) => clue.direction === 'Down');
 
+  // -- Actions -------------------------------------------------------------
+
   async function refreshSession(nextSessionId: string, puzzleId = currentPuzzleId) {
     const response = await fetchJson<SessionResponse>(`/api/sessions/${nextSessionId}`);
     storeSessionId(puzzleId, response.sessionId);
@@ -284,48 +227,38 @@ export function useTutorSession() {
     });
   }
 
-  async function uploadPdf(file: File) {
-    setIsSubmitting(true);
-    setError(null);
-    try {
-      const form = new FormData();
-      form.append('file', file);
-      const response = await fetchFormJson<SessionResponse>('/api/imports/pdf', form);
-      storeSessionId(response.puzzle.puzzle_id, response.sessionId);
-      startTransition(() => {
-        setAvailablePuzzleIds((current) => Array.from(new Set([...current, response.puzzle.puzzle_id])).sort());
-        setCurrentPuzzleId(response.puzzle.puzzle_id);
-        setPuzzle(response.puzzle);
-        setSessionId(response.sessionId);
-        setSessionState(response.sessionState);
-        setDraftAnswer('');
-        setJustification('');
-      });
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to import PDF puzzle.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+  const uploadPdf = useCallback(
+    (file: File) =>
+      withSubmit('Unable to import PDF puzzle.', async () => {
+        const form = new FormData();
+        form.append('file', file);
+        const response = await fetchFormJson<SessionResponse>('/api/imports/pdf', form);
+        storeSessionId(response.puzzle.puzzle_id, response.sessionId);
+        startTransition(() => {
+          setAvailablePuzzleIds((current) => Array.from(new Set([...current, response.puzzle.puzzle_id])).sort());
+          setCurrentPuzzleId(response.puzzle.puzzle_id);
+          setPuzzle(response.puzzle);
+          setSessionId(response.sessionId);
+          setSessionState(response.sessionState);
+          setDraftAnswer('');
+          setJustification('');
+        });
+      })(),
+    [withSubmit],
+  );
 
-  async function lookupThesaurus() {
+  const lookupThesaurus = useCallback(async () => {
     if (!selectedClue || !thesaurusTerm.trim()) {
       setThesaurusCandidates([]);
       return;
     }
 
-    setIsSubmitting(true);
-    setError(null);
-    try {
+    await withSubmit('Unable to look up thesaurus entries.', async () => {
       const params = new URLSearchParams({ term: thesaurusTerm.trim(), length: String(selectedClue.answer_length) });
       const response = await fetchJson<ThesaurusLookupResponse>(`/api/thesaurus?${params.toString()}`);
       setThesaurusCandidates(response.candidates);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to look up thesaurus entries.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+    })();
+  }, [selectedClue, thesaurusTerm, withSubmit]);
 
   function choosePuzzle(puzzleId: string) {
     if (puzzleId === currentPuzzleId) {
@@ -339,30 +272,19 @@ export function useTutorSession() {
   }
 
   async function selectClue(clueId: string) {
-    if (!sessionId) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-    try {
+    if (!sessionId) return;
+    await withSubmit('Unable to select clue.', async () => {
       await fetchJson(`/api/sessions/${sessionId}/select-clue`, {
         method: 'POST',
         body: JSON.stringify({ clueId }),
       });
       await refreshSession(sessionId);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to select clue.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    })();
   }
 
   async function selectCell(x: number, y: number) {
     const clueIds = cellClueMap[`${x},${y}`] ?? [];
-    if (clueIds.length === 0) {
-      return;
-    }
+    if (clueIds.length === 0) return;
 
     if (clueIds.length === 1 || !sessionState?.selectedClueId) {
       await selectClue(clueIds[0]);
@@ -375,83 +297,47 @@ export function useTutorSession() {
   }
 
   async function submitAnswer() {
-    if (!sessionId || !selectedClue) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-    try {
+    if (!sessionId || !selectedClue) return;
+    await withSubmit('Unable to submit answer.', async () => {
       await fetchJson(`/api/sessions/${sessionId}/entries`, {
         method: 'POST',
         body: JSON.stringify({ clueId: selectedClue.id, answer: draftAnswer, justification }),
       });
       await refreshSession(sessionId);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to submit answer.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    })();
   }
 
   async function acceptAnswer() {
-    if (!sessionId || !selectedClue) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-    try {
+    if (!sessionId || !selectedClue) return;
+    await withSubmit('Unable to accept answer.', async () => {
       await fetchJson(`/api/sessions/${sessionId}/entries/${selectedClue.id}/accept`, {
         method: 'POST',
         body: JSON.stringify({ answer: draftAnswer, justification }),
       });
       await refreshSession(sessionId);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to accept answer.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    })();
   }
 
   async function clearAnswer() {
-    if (!sessionId || !selectedClue) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-    try {
+    if (!sessionId || !selectedClue) return;
+    await withSubmit('Unable to clear answer.', async () => {
       await fetchJson(`/api/sessions/${sessionId}/entries/${selectedClue.id}`, {
         method: 'DELETE',
       });
       setDraftAnswer('');
       await refreshSession(sessionId);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to clear answer.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    })();
   }
 
   async function requestNextHint() {
-    if (!sessionId || !selectedClue) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
-    try {
+    if (!sessionId || !selectedClue) return;
+    await withSubmit('Unable to fetch next hint.', async () => {
       await fetchJson(`/api/sessions/${sessionId}/clues/${selectedClue.id}/next-hint`, {
         method: 'POST',
         body: JSON.stringify({ mode: 'incremental' }),
       });
       await refreshSession(sessionId);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'Unable to fetch next hint.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    })();
   }
 
   return {

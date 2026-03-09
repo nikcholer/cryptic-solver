@@ -1,4 +1,7 @@
 import type { ClueState, PuzzleClue, ThesaurusCandidate } from '../types';
+import { formatStatus } from '../format';
+import { ThesaurusPanel } from './ThesaurusPanel';
+import { HintStack } from './HintStack';
 
 interface ClueWorkspaceProps {
   clue: PuzzleClue | null;
@@ -44,6 +47,9 @@ export function ClueWorkspace({
     );
   }
 
+  const hasFilledPattern = clueState?.current_pattern ? clueState.current_pattern.replace(/\./g, '').length > 0 : false;
+  const canClear = hasFilledPattern || draftAnswer.trim().length > 0;
+
   return (
     <section className="workspace-card">
       <div className="workspace-header">
@@ -52,7 +58,7 @@ export function ClueWorkspace({
           <h2>{clue.id}</h2>
         </div>
         <span className={`clue-status-badge large ${clueState?.status ?? 'untouched'}`}>
-          {clueState?.status?.replace('_', ' ') ?? 'untouched'}
+          {formatStatus(clueState?.status ?? 'untouched')}
         </span>
       </div>
 
@@ -90,7 +96,7 @@ export function ClueWorkspace({
           type="button"
           className="action-btn"
           onClick={onClearAnswer}
-          disabled={isBusy || ((!clueState?.current_pattern || !clueState.current_pattern.replace(/\./g, '').length) && !draftAnswer.trim().length)}
+          disabled={isBusy || !canClear}
         >
           Clear answer
         </button>
@@ -124,61 +130,22 @@ export function ClueWorkspace({
         <div className={`validation-card ${clueState.validation.result}`}>
           <strong>{clueState.validation.result}</strong>
           <p>{clueState.validation.reason}</p>
+          {clueState.validation.symbolic_followup ? (
+            <p><strong>Suggested next step:</strong> {clueState.validation.symbolic_followup}</p>
+          ) : null}
         </div>
       )}
 
-      <section className="thesaurus-panel">
-        <div className="hint-card-header">
-          <span>Explore definition</span>
-          <span>{clue.answer_length} letters</span>
-        </div>
-        <div className="thesaurus-controls">
-          <input
-            value={thesaurusTerm}
-            onChange={(event) => onThesaurusTermChange(event.target.value)}
-            className="thesaurus-input"
-            placeholder="e.g. story, writer, team"
-            disabled={isBusy}
-          />
-          <button
-            type="button"
-            className="action-btn"
-            onClick={onLookupThesaurus}
-            disabled={isBusy || thesaurusTerm.trim().length === 0}
-          >
-            Lookup
-          </button>
-        </div>
-        {thesaurusCandidates.length ? (
-          <div className="thesaurus-results">
-            {thesaurusCandidates.map((candidate) => (
-              <span key={`${candidate.word}-${candidate.pos ?? 'any'}`} className="thesaurus-chip">
-                {candidate.word}
-                {candidate.pos ? ` (${candidate.pos})` : ''}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="hint-empty">No local thesaurus results yet.</p>
-        )}
-      </section>
+      <ThesaurusPanel
+        answerLength={clue.answer_length}
+        thesaurusTerm={thesaurusTerm}
+        thesaurusCandidates={thesaurusCandidates}
+        onThesaurusTermChange={onThesaurusTermChange}
+        onLookupThesaurus={onLookupThesaurus}
+        isBusy={isBusy}
+      />
 
-      <div className="hint-stack">
-        <h3>Hints shown</h3>
-        {clueState?.hints.length ? (
-          clueState.hints.map((hint) => (
-            <article key={`${hint.level}-${hint.kind}`} className="hint-card">
-              <div className="hint-card-header">
-                <span className="hint-level">Level {hint.level}</span>
-                <span className="hint-kind">{hint.kind.replace('_', ' ')}</span>
-              </div>
-              <p>{hint.text}</p>
-            </article>
-          ))
-        ) : (
-          <p className="hint-empty">No hints revealed yet.</p>
-        )}
-      </div>
+      <HintStack hints={clueState?.hints ?? []} />
     </section>
   );
 }

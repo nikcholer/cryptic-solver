@@ -323,6 +323,29 @@ class BackendServiceTests(unittest.TestCase):
         self.assertEqual(result['kind'].value, 'clue_type')
         self.assertIn('runtime', result['text'].lower())
 
+    def test_runtime_symbolic_followup_downgrades_hard_conflict(self) -> None:
+        class FollowupAdjudicator:
+            def adjudicate(self, puzzle, session, clue, analysis, answer, mechanical_result, solver_justification=None):
+                return {
+                    'clueId': clue.id,
+                    'result': ValidationResult.CONFLICT,
+                    'reason': 'Definition fit is uncertain without a better mechanical read.',
+                    'confidence': 0.4,
+                    'symbolicFollowup': 'Try inserting KE into flower names.',
+                }
+
+        puzzle = self.loader.load_puzzle('prize-cryptic-85080')
+        adapter = HeuristicRuntimeAdapter(REPO_ROOT, semantic_adjudicator=FollowupAdjudicator())
+        service = SessionService(SessionStore(self.repo_root / 'symbolic-followup'), GridEngine(), adapter)
+        session = service.create_session(puzzle)
+        result = service.check_answer(puzzle, session.session_id, '6D', 'LIKELY')
+        self.assertEqual(result['result'].value, 'plausible')
+        self.assertIn('Suggested symbolic follow-up', result['reason'])
+        self.assertEqual(result['symbolicFollowup'], 'Try inserting KE into flower names.')
+
+        updated_session, _, _, _ = service.submit_entry(puzzle, session.session_id, '6D', 'LIKELY')
+        self.assertEqual(updated_session.clue_states['6D'].validation.symbolic_followup, 'Try inserting KE into flower names.')
+
     def test_runtime_gateway_can_override_mechanical_confirmation(self) -> None:
         runtime_script = self._write_runtime_script()
         gateway = CommandRuntimeGateway([sys.executable, str(runtime_script)], REPO_ROOT)

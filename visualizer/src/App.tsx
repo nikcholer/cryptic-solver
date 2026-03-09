@@ -2,6 +2,7 @@ import type { ChangeEvent } from 'react';
 import { ClueList } from './components/ClueList';
 import { ClueWorkspace } from './components/ClueWorkspace';
 import { CrosswordGrid } from './components/CrosswordGrid';
+import { formatTokens } from './format';
 import { useTutorSession } from './hooks/useTutorSession';
 import './index.css';
 
@@ -63,7 +64,6 @@ export function App() {
   }
 
   const allCluesConfirmed = Object.values(sessionState.clueStates).every((clueState) => clueState.status === 'confirmed');
-  const formatTokens = (count: number) => new Intl.NumberFormat('en-GB').format(count);
 
   return (
     <div className={`app-shell ${allCluesConfirmed ? 'puzzle-complete' : ''}`}>

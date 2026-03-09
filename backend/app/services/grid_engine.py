@@ -102,9 +102,10 @@ class GridEngine:
         result: ValidationResult,
         reason: str,
         confidence: float | None = None,
+        symbolic_followup: str | None = None,
     ) -> None:
         clue_state = session.clue_states[clue_id]
-        clue_state.validation = ValidationRecord(result=result, reason=reason, confidence=confidence)
+        clue_state.validation = ValidationRecord(result=result, reason=reason, confidence=confidence, symbolic_followup=symbolic_followup)
         clue_state.status = {
             ValidationResult.CONFIRMED: ClueStatus.CONFIRMED,
             ValidationResult.PLAUSIBLE: ClueStatus.PLAUSIBLE,

@@ -6,6 +6,7 @@ import shlex
 import subprocess
 import sys
 import tempfile
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -47,11 +48,12 @@ NEXT_HINT_SCHEMA = {
 SEMANTIC_SCHEMA = {
     'type': 'object',
     'additionalProperties': False,
-    'required': ['result', 'reason', 'confidence'],
+    'required': ['result', 'reason', 'confidence', 'symbolicFollowup'],
     'properties': {
         'result': {'type': 'string', 'enum': ['confirmed', 'plausible', 'conflict']},
         'reason': {'type': 'string'},
         'confidence': {'type': ['number', 'null']},
+        'symbolicFollowup': {'type': ['string', 'null']},
     },
 }
 
@@ -154,6 +156,11 @@ Rules:
 - plausible: could fit, or the likely definition span may differ from the current guess.
 - conflict: fails against all plausible definition readings.
 - Do not reject an answer merely because it overturns an earlier parse guess.
+- Treat symbolicAnalysis as the deterministic starting point for letter mechanics. Use it if it supports a parse; if it is weak or unresolved, say so rather than inventing a detailed new mechanism.
+- Only describe precise letter operations when they are supported by symbolicAnalysis, solverJustification, or an obvious one-step clue device.
+- If symbolicAnalysis has no solverCandidates and no fodderText, avoid speculative assembly/disassembly claims and judge mainly on definition fit unless solverJustification clearly supplies the mechanics.
+- If the answer seems semantically plausible but the mechanics are unresolved, set result to plausible and use symbolicFollowup to suggest the next symbolic search the caller should try.
+- symbolicFollowup should be null unless you are explicitly suggesting a targeted symbolic next step such as testing an insertion, anagram fodder, hidden answer span, or letter-selection pattern.
 - If solverJustification is present, treat it as extra human evidence, not an automatic override.
 - Prefer explanation with both definition and wordplay for straightforward clues.
 - Inspect the clue itself for simple mechanisms such as anagram, containment, reversal, hidden answer, initial letters, charade, or homophone.
@@ -199,6 +206,7 @@ def invoke_codex(prompt: str, schema: dict[str, Any], capability: str | None) ->
             errors='replace',
             cwd=ROOT,
             check=False,
+            timeout=int(os.environ.get('CODEX_RUNTIME_TIMEOUT_SECONDS', '90')),
         )
         if completed.returncode != 0:
             _print_error('CODEX_STDERR_START')
@@ -217,6 +225,12 @@ def invoke_codex(prompt: str, schema: dict[str, Any], capability: str | None) ->
             _print_error(completed.stdout or '')
             _print_error('CODEX_STDOUT_END')
         return parsed
+    except subprocess.TimeoutExpired:
+        _print_error('Codex runtime timed out.')
+        return None
+    except PermissionError as exc:
+        _print_error(f'Codex runtime launch failed: {exc}')
+        return None
     finally:
         schema_path.unlink(missing_ok=True)
 
@@ -224,8 +238,18 @@ def invoke_codex(prompt: str, schema: dict[str, Any], capability: str | None) ->
 def resolve_codex_command() -> list[str]:
     override = os.environ.get('CODEX_RUNTIME_EXECUTABLE', '').strip()
     if override:
-        return shlex.split(override, posix=False)
-    return ['codex']
+        command = shlex.split(override, posix=False)
+    else:
+        resolved = shutil.which('codex')
+        command = [resolved] if resolved else ['codex']
+
+    executable = command[0]
+    lowered = executable.lower()
+    if lowered.endswith('.cmd') or lowered.endswith('.bat'):
+        return ['cmd.exe', '/c', executable, *command[1:]]
+    if lowered.endswith('.ps1'):
+        return ['powershell.exe', '-ExecutionPolicy', 'Bypass', '-File', executable, *command[1:]]
+    return command
 
 
 

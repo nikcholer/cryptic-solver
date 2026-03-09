@@ -105,7 +105,7 @@ class SessionService:
                 'reason': 'This answer was already revealed in the hint ladder, so it remains plausible even though the final definition check is unconvinced.',
                 'confidence': result.get('confidence'),
             }
-        self.grid_engine.attach_validation(session, clue_id, result['result'], result['reason'], result.get('confidence'))
+        self.grid_engine.attach_validation(session, clue_id, result['result'], result['reason'], result.get('confidence'), result.get('symbolicFollowup'))
         if result['result'].value == 'conflict':
             self.store.save(session)
             return session, [], {clue_id: session.clue_states[clue_id].current_pattern}, {}

@@ -17,6 +17,7 @@ class ValidationRecord(BaseModel):
     result: ValidationResult
     reason: str
     confidence: float | None = None
+    symbolic_followup: str | None = None
 
 
 class ClueState(BaseModel):

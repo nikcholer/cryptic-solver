@@ -103,6 +103,7 @@ class CheckAnswerResponse(BaseModel):
     clue_id: str = Field(alias="clueId")
     result: ValidationResult
     reason: str
+    symbolic_followup: str | None = Field(default=None, alias="symbolicFollowup")
 
 
 class NextHintResponse(BaseModel):

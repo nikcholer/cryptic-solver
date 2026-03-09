@@ -179,6 +179,7 @@ class GatewaySemanticAdjudicator:
             'result': ValidationResult(parsed.result),
             'reason': parsed.reason,
             'confidence': parsed.confidence,
+            'symbolicFollowup': parsed.symbolicFollowup,
         }
         if usage is not None:
             result['_usage'] = usage
@@ -339,7 +340,14 @@ class HeuristicRuntimeAdapter:
         if puzzle is None or session is None:
             return mechanical_result
         semantic_result = self.semantic_adjudicator.adjudicate(puzzle, session, clue, analysis, answer, mechanical_result, solver_justification)
-        return semantic_result or mechanical_result
+        if not semantic_result:
+            return mechanical_result
+        symbolic_followup = semantic_result.get('symbolicFollowup')
+        if symbolic_followup and semantic_result.get('result') == ValidationResult.CONFLICT and not analysis.solver_candidates and not analysis.fodder_text:
+            semantic_result = dict(semantic_result)
+            semantic_result['result'] = ValidationResult.PLAUSIBLE
+            semantic_result['reason'] = f"{semantic_result.get('reason', '')} Suggested symbolic follow-up: {symbolic_followup}".strip()
+        return semantic_result
 
     def _analyze_clue(self, clue: PuzzleClue, pattern: str) -> Analysis:
         words = _WORD_RE.findall(clue.clue.strip())

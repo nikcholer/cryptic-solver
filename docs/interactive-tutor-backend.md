@@ -197,6 +197,16 @@ Rationale:
 - lets the tutor be supportive without overclaiming
 - preserves room for user-led solving under uncertainty
 
+## Symbolic Follow-up
+
+When the semantic adjudicator (external LLM) returns a `conflict` verdict but also suggests a targeted next step via `symbolicFollowup`, the backend downgrades the result to `plausible` — but only when the local heuristic engine had no solver candidates and no identified fodder text. This prevents a hard rejection when the mechanics are simply unresolved rather than provably wrong.
+
+The downgrade is applied in a single place: `HeuristicRuntimeAdapter._apply_semantic_judgement()`. The adjudicator itself returns the raw verdict; policy is not mixed into the gateway layer.
+
+The `symbolicFollowup` string (e.g. "Try inserting KE into flower names") is persisted on the `ValidationRecord` and forwarded to the frontend, where `ClueWorkspace` renders it as a "Suggested next step" beneath the validation card. This gives the user actionable guidance when the tutor cannot yet confirm or reject an answer.
+
+`symbolicFollowup` is `null` unless the adjudicator is explicitly suggesting a targeted symbolic search such as testing an insertion, anagram fodder, hidden-answer span, or letter-selection pattern.
+
 ## Hint Ladder
 
 Hints are monotonic and per-clue.

@@ -3,14 +3,6 @@ export type ClueStatus = 'untouched' | 'in_progress' | 'plausible' | 'confirmed'
 export type ValidationResult = 'confirmed' | 'plausible' | 'conflict';
 export type HintKind = 'clue_type' | 'structure' | 'wordplay_focus' | 'candidate_space' | 'answer_reveal';
 
-export interface PuzzleClueMetadata {
-  direction: Direction;
-  length: number;
-  uncertain?: boolean;
-  x: number;
-  y: number;
-}
-
 export interface PuzzleClue {
   id: string;
   direction: Direction;
@@ -27,7 +19,7 @@ export interface PuzzleClue {
 export interface PuzzleGrid {
   width: number;
   height: number;
-  clues: Record<string, PuzzleClueMetadata>;
+  clues: Record<string, { direction: Direction; length: number; x: number; y: number }>;
 }
 
 export interface PuzzleDefinition {
@@ -46,6 +38,7 @@ export interface ValidationRecord {
   result: ValidationResult;
   reason: string;
   confidence?: number | null;
+  symbolic_followup?: string | null;
 }
 
 export interface EntryRecord {
@@ -96,8 +89,6 @@ export interface SessionResponse {
   puzzle: PuzzleDefinition;
   sessionState: SessionState;
 }
-
-export interface CreateSessionResponse extends SessionResponse {}
 
 export interface ThesaurusCandidate {
   word: string;
