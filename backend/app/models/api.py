@@ -48,6 +48,14 @@ class SessionSnapshot(BaseModel):
     runtime_usage: RuntimeUsageRecord = Field(alias="runtimeUsage")
 
 
+class PuzzleSummary(BaseModel):
+    puzzle_id: str = Field(alias="puzzleId")
+
+
+class PuzzleListResponse(BaseModel):
+    puzzles: list[PuzzleSummary]
+
+
 class PuzzleResponse(BaseModel):
     puzzle: PuzzleDefinition
 
@@ -113,3 +121,15 @@ class ReanalyzedClueUpdate(BaseModel):
 
 class ReanalyzeAffectedResponse(BaseModel):
     clue_updates: list[ReanalyzedClueUpdate] = Field(alias="clueUpdates")
+
+class ThesaurusCandidate(BaseModel):
+    word: str
+    pos: str | None = None
+    length: int
+
+
+class ThesaurusLookupResponse(BaseModel):
+    term: str
+    length: int | None = None
+    candidates: list[ThesaurusCandidate]
+

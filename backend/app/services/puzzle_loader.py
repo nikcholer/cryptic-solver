@@ -41,6 +41,18 @@ class PuzzleLoader:
                 )
         return PuzzleDefinition(puzzle_id=puzzle_id, grid=grid, clues=clues)
 
+
+    def list_puzzles(self) -> list[str]:
+        if not self.samples_dir.exists():
+            return []
+        puzzle_ids: list[str] = []
+        for child in sorted(self.samples_dir.iterdir(), key=lambda item: item.name):
+            if not child.is_dir():
+                continue
+            if (child / "grid_state.json").exists() and (child / "clues.yaml").exists():
+                puzzle_ids.append(child.name)
+        return puzzle_ids
+
     def _answer_length(self, enum: str | None, fallback: int) -> int:
         if not enum:
             return fallback

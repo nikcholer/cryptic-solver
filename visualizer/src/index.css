@@ -87,6 +87,34 @@ p {
   letter-spacing: -0.04em;
 }
 
+.header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(12, 108, 90, 0.25);
+  background: rgba(12, 108, 90, 0.1);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.upload-btn input {
+  display: none;
+}
+
+.upload-btn.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .session-chip-group {
   display: flex;
   flex-wrap: wrap;
@@ -108,6 +136,27 @@ p {
 .usage-chip {
   background: rgba(12, 108, 90, 0.08);
   border-color: rgba(12, 108, 90, 0.18);
+}
+
+.puzzle-picker select {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line-soft);
+  background: rgba(255, 253, 246, 0.88);
+  color: var(--text-main);
+  font: inherit;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .error-banner {
@@ -479,6 +528,10 @@ p {
     flex-direction: column;
   }
 
+  .header-actions {
+    align-items: stretch;
+  }
+
   :root {
     --cell-size: 31px;
   }
@@ -550,4 +603,44 @@ p {
 
 .completion-banner p:last-child {
   color: var(--text-muted);
+}
+
+.thesaurus-panel {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.thesaurus-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.thesaurus-input {
+  flex: 1 1 220px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-panel-strong);
+  font: inherit;
+}
+
+.thesaurus-results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.thesaurus-chip {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(12, 108, 90, 0.1);
+  border: 1px solid rgba(12, 108, 90, 0.18);
+  font-size: 0.88rem;
 }

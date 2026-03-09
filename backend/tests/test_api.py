@@ -27,6 +27,7 @@ from app.services.session_service import SessionService  # noqa: E402
 from app.stores.session_store import SessionStore  # noqa: E402
 from app.models.session import HintRecord  # noqa: E402
 from app.models.common import ValidationResult  # noqa: E402
+from app.services.thesaurus_service import ThesaurusService  # noqa: E402
 
 
 class BackendServiceTests(unittest.TestCase):
@@ -228,7 +229,26 @@ class BackendServiceTests(unittest.TestCase):
         self.assertEqual(result['result'].value, 'confirmed')
         self.assertIn('anagram', result['reason'].lower())
 
+    def test_initial_letters_clue_can_confirm(self) -> None:
+        puzzle = self.loader.load_puzzle('prize-cryptic-85080')
+        adapter = HeuristicRuntimeAdapter(REPO_ROOT)
+        analysis = adapter._analyze_clue(puzzle.clues['25D'], 'WHEN')
+        self.assertEqual(analysis.clue_type, 'initials')
+        self.assertEqual(analysis.indicator, 'for starters')
+        self.assertIn('WHEN', analysis.solver_candidates)
+        result = adapter.validate_answer(puzzle.clues['25D'], 'WHEN', 'WHEN')
+        self.assertEqual(result['result'].value, 'confirmed')
+        self.assertIn('initial-letters parse', result['reason'])
 
+    def test_indicator_lists_cover_recent_missed_cases(self) -> None:
+        puzzle = self.loader.load_puzzle('prize-cryptic-85080')
+        adapter = HeuristicRuntimeAdapter(REPO_ROOT)
+        anagram = adapter._analyze_clue(puzzle.clues['17A'], '.' * puzzle.clues['17A'].answer_length)
+        container = adapter._analyze_clue(puzzle.clues['19A'], '.' * puzzle.clues['19A'].answer_length)
+        self.assertEqual(anagram.clue_type, 'anagram')
+        self.assertEqual(anagram.indicator, 'revolutionary')
+        self.assertEqual(container.clue_type, 'container')
+        self.assertEqual(container.indicator, 'defending')
 
 
     def test_proper_noun_answer_can_be_plausible_without_wordlist_hit(self) -> None:
@@ -300,7 +320,7 @@ class BackendServiceTests(unittest.TestCase):
         )
         session = service.create_session(self.puzzle)
         _, result = service.next_hint(self.puzzle, session.session_id, '4D')
-        self.assertEqual(result['kind'].value, 'structure')
+        self.assertEqual(result['kind'].value, 'clue_type')
         self.assertIn('runtime', result['text'].lower())
 
     def test_runtime_gateway_can_override_mechanical_confirmation(self) -> None:
@@ -347,6 +367,29 @@ class BackendServiceTests(unittest.TestCase):
         self.assertEqual(referenced['19A'].answer, 'RICK')
         self.assertEqual(referenced['9D'].answer, 'LUND')
 
+    def test_runtime_payload_includes_symbolic_analysis(self) -> None:
+        puzzle = self.loader.load_puzzle('prize-cryptic-85080')
+        service = SessionService(
+            SessionStore(self.repo_root / 'symbolic-payload'),
+            GridEngine(),
+            StubRuntimeAdapter(),
+        )
+        session = service.create_session(puzzle)
+        adapter = HeuristicRuntimeAdapter(REPO_ROOT)
+        clue = puzzle.clues['17A']
+        analysis = adapter._analyze_clue(clue, session.clue_states['17A'].current_pattern)
+        request = build_next_hint_request(
+            puzzle,
+            session,
+            clue,
+            session.clue_states['17A'].current_pattern,
+            session.clue_states['17A'].hint_level_shown,
+            analysis,
+        )
+        self.assertEqual(request.context.symbolicAnalysis.clueType, 'anagram')
+        self.assertEqual(request.context.symbolicAnalysis.indicator, 'revolutionary')
+        self.assertGreater(request.context.symbolicAnalysis.confidence or 0, 0.7)
+
     def test_codex_wrapper_translates_jsonl_output(self) -> None:
         fake_bin = self.repo_root / 'bin'
         fake_bin.mkdir()
@@ -370,7 +413,17 @@ class BackendServiceTests(unittest.TestCase):
                 if 'semantic_judgement' in prompt or 'proposedAnswer' in prompt:
                     payload = {'result': 'plausible', 'reason': f'Wrapper semantic response via {model}/{reasoning}.', 'confidence': 0.5}
                 else:
-                    payload = {'clueId': '4D', 'hintLevel': 2, 'kind': 'structure', 'text': f'Wrapper next hint via {model}/{reasoning}.', 'confidence': 0.6}
+                    payload = {
+                        'clueId': '4D',
+                        'hints': [
+                            {'level': 1, 'kind': 'clue_type', 'text': f'Wrapper level 1 via {model}/{reasoning}.'},
+                            {'level': 2, 'kind': 'structure', 'text': f'Wrapper next hint via {model}/{reasoning}.'},
+                            {'level': 3, 'kind': 'wordplay_focus', 'text': 'Wrapper level 3.'},
+                            {'level': 4, 'kind': 'candidate_space', 'text': 'Wrapper level 4.'},
+                            {'level': 5, 'kind': 'answer_reveal', 'text': 'Wrapper level 5.'},
+                        ],
+                        'confidence': 0.6
+                    }
                 print(json.dumps({'msg': {'type': 'task_complete', 'last_agent_message': json.dumps(payload)}}))
                 print(json.dumps({'type': 'turn.completed', 'usage': {'input_tokens': 321, 'cached_input_tokens': 45, 'output_tokens': 67}}))
                 '''
@@ -413,10 +466,10 @@ class BackendServiceTests(unittest.TestCase):
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
         decoded = json.loads(completed.stdout)
-        self.assertEqual(decoded['kind'], 'structure')
-        self.assertEqual(decoded['hintLevel'], 2)
-        self.assertIn('test-reasoner-model', decoded['text'])
-        self.assertIn('/low', decoded['text'])
+        self.assertEqual(decoded['hints'][1]['kind'], 'structure')
+        self.assertEqual(decoded['hints'][1]['level'], 2)
+        self.assertIn('test-reasoner-model', decoded['hints'][1]['text'])
+        self.assertIn('/low', decoded['hints'][1]['text'])
         self.assertEqual(decoded['_usage']['input_tokens'], 321)
         self.assertEqual(decoded['_usage']['cached_input_tokens'], 45)
         self.assertEqual(decoded['_usage']['output_tokens'], 67)
@@ -424,6 +477,14 @@ class BackendServiceTests(unittest.TestCase):
     def test_loader_exposes_puzzle_definition(self) -> None:
         self.assertEqual(self.puzzle.puzzle_id, 'cryptic-2026-03-03')
         self.assertIn('1A', self.puzzle.clues)
+
+    def test_local_thesaurus_filters_by_length(self) -> None:
+        service = ThesaurusService(REPO_ROOT)
+        candidates = service.lookup('story', length=7)
+        words = {candidate['word'] for candidate in candidates}
+        self.assertIn('account', words)
+        self.assertIn('history', words)
+        self.assertNotIn('tale', words)
 
     def _write_runtime_script(self) -> Path:
         script_path = self.repo_root / 'fake_runtime.py'
@@ -439,9 +500,13 @@ class BackendServiceTests(unittest.TestCase):
                     context = payload['context']
                     print(json.dumps({
                         'clueId': context['clueId'],
-                        'hintLevel': context['hintLevelAlreadyShown'] + 1,
-                        'kind': 'structure',
-                        'text': 'Runtime says the definition is at the start.',
+                        'hints': [
+                            {'level': 1, 'kind': 'clue_type', 'text': 'Runtime clue type hint.'},
+                            {'level': 2, 'kind': 'structure', 'text': 'Runtime says the definition is at the start.'},
+                            {'level': 3, 'kind': 'wordplay_focus', 'text': 'Runtime wordplay hint.'},
+                            {'level': 4, 'kind': 'candidate_space', 'text': 'Runtime candidate hint.'},
+                            {'level': 5, 'kind': 'answer_reveal', 'text': 'Runtime reveal hint.'},
+                        ],
                         'confidence': 0.66,
                         '_usage': {'input_tokens': 120, 'cached_input_tokens': 30, 'output_tokens': 12},
                     }))

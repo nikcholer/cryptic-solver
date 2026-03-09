@@ -39,13 +39,16 @@ class SessionService:
         clue_state = session.clue_states.get(clue_id)
         if not clue_state:
             return None
-        supporting_hints = [
-            hint.text.strip()
-            for hint in clue_state.hints
-            if hint.level >= 3 and hint.text.strip()
-        ]
-        if supporting_hints:
-            return '\n'.join(supporting_hints)
+        reveal_hint = next(
+            (
+                hint.text.strip()
+                for hint in clue_state.hints
+                if hint.level == 5 and hint.kind.value == 'answer_reveal' and hint.text.strip()
+            ),
+            None,
+        )
+        if reveal_hint:
+            return reveal_hint
         return None
 
     def _answer_was_revealed(self, session: SessionState, clue_id: str, answer: str) -> bool:
@@ -191,13 +194,21 @@ class SessionService:
             }
 
         next_level = min(clue_state.hint_level_shown + 1, 5)
-        result = self.runtime.next_hint(clue, clue_state.current_pattern, next_level, puzzle, session)
-        self._accumulate_runtime_usage(session, result)
+        if len(clue_state.hint_plan) < 5:
+            plan_result = self.runtime.next_hint(clue, clue_state.current_pattern, next_level, puzzle, session)
+            self._accumulate_runtime_usage(session, plan_result)
+            clue_state.hint_plan = [HintRecord(level=hint['level'], kind=hint['kind'], text=hint['text']) for hint in plan_result['hints']]
         clue_state.hint_level_shown = next_level
-        if clue_state.hints and clue_state.hints[-1].level == next_level:
-            clue_state.hints[-1] = HintRecord(level=next_level, kind=result['kind'], text=result['text'])
-        else:
-            clue_state.hints.append(HintRecord(level=next_level, kind=result['kind'], text=result['text']))
+        revealed = [hint for hint in clue_state.hint_plan if hint.level <= next_level]
+        clue_state.hints = revealed
+        current_hint = next((hint for hint in revealed if hint.level == next_level), clue_state.hints[-1])
+        result = {
+            'clueId': clue.id,
+            'hintLevel': current_hint.level,
+            'kind': current_hint.kind,
+            'text': current_hint.text,
+            'confidence': None,
+        }
         self.store.save(session)
         return session, result
 

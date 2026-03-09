@@ -12,6 +12,7 @@ from app.runtime.schemas import (
     ReferencedClueContext,
     SemanticJudgementContext,
     SemanticJudgementRequest,
+    SymbolicAnalysis,
 )
 
 SKILL_NAME = 'cryptic-crossword-solver'
@@ -42,6 +43,7 @@ def build_semantic_judgement_request(
             indicator=analysis.indicator,
             fodderText=analysis.fodder_text,
             solverCandidates=analysis.solver_candidates,
+            symbolicAnalysis=build_symbolic_analysis(analysis),
             linkedEntries=linked_entries,
             referencedClues=referenced_clues,
             solverJustification=solver_justification or None,
@@ -77,6 +79,7 @@ def build_next_hint_request(
             indicator=analysis.indicator,
             fodderText=analysis.fodder_text,
             solverCandidates=analysis.solver_candidates,
+            symbolicAnalysis=build_symbolic_analysis(analysis),
             linkedEntries=linked_entries,
             referencedClues=referenced_clues,
         ),
@@ -119,3 +122,28 @@ def _optional_float(value: object) -> float | None:
     if value is None:
         return None
     return float(value)
+
+
+def build_symbolic_analysis(analysis: Any) -> SymbolicAnalysis:
+    notes: list[str] = []
+    if analysis.indicator:
+        notes.append(f"Indicator candidate: {analysis.indicator}")
+    if analysis.fodder_text:
+        notes.append(f"Fodder candidate: {analysis.fodder_text}")
+    if analysis.solver_candidates:
+        notes.append(f"Local candidates: {', '.join(analysis.solver_candidates[:3])}")
+    confidence = 0.35
+    if analysis.clue_type in {'anagram', 'hidden', 'reversal'}:
+        confidence = 0.8
+    elif analysis.clue_type in {'container', 'charade', 'double_definition'}:
+        confidence = 0.6
+    return SymbolicAnalysis(
+        clueType=analysis.clue_type,
+        definitionText=analysis.definition_text,
+        definitionSide=analysis.definition_side,
+        indicator=analysis.indicator,
+        fodderText=analysis.fodder_text,
+        solverCandidates=list(analysis.solver_candidates),
+        confidence=confidence,
+        notes=notes,
+    )

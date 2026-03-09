@@ -24,6 +24,7 @@ class ClueState(BaseModel):
     current_pattern: str
     hint_level_shown: int = 0
     hints: list[HintRecord] = Field(default_factory=list)
+    hint_plan: list[HintRecord] = Field(default_factory=list)
     validation: ValidationRecord | None = None
 
 

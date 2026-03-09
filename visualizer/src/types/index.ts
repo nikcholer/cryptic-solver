@@ -79,6 +79,14 @@ export interface SessionState {
   runtimeUsage: RuntimeUsage;
 }
 
+export interface PuzzleSummary {
+  puzzleId: string;
+}
+
+export interface PuzzleListResponse {
+  puzzles: PuzzleSummary[];
+}
+
 export interface PuzzleResponse {
   puzzle: PuzzleDefinition;
 }
@@ -90,6 +98,18 @@ export interface SessionResponse {
 }
 
 export interface CreateSessionResponse extends SessionResponse {}
+
+export interface ThesaurusCandidate {
+  word: string;
+  pos?: string | null;
+  length: number;
+}
+
+export interface ThesaurusLookupResponse {
+  term: string;
+  length?: number | null;
+  candidates: ThesaurusCandidate[];
+}
 
 export interface GridCell {
   x: number;

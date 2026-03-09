@@ -19,15 +19,27 @@ from app.runtime.schemas import RuntimeRequest  # noqa: E402
 NEXT_HINT_SCHEMA = {
     'type': 'object',
     'additionalProperties': False,
-    'required': ['clueId', 'hintLevel', 'kind', 'text', 'confidence'],
+    'required': ['clueId', 'hints', 'confidence'],
     'properties': {
         'clueId': {'type': 'string'},
-        'hintLevel': {'type': 'integer'},
-        'kind': {
-            'type': 'string',
-            'enum': ['clue_type', 'structure', 'wordplay_focus', 'candidate_space', 'answer_reveal'],
+        'hints': {
+            'type': 'array',
+            'minItems': 5,
+            'maxItems': 5,
+            'items': {
+                'type': 'object',
+                'additionalProperties': False,
+                'required': ['level', 'kind', 'text'],
+                'properties': {
+                    'level': {'type': 'integer'},
+                    'kind': {
+                        'type': 'string',
+                        'enum': ['clue_type', 'structure', 'wordplay_focus', 'candidate_space', 'answer_reveal'],
+                    },
+                    'text': {'type': 'string'},
+                },
+            },
         },
-        'text': {'type': 'string'},
         'confidence': {'type': ['number', 'null']},
     },
 }
@@ -76,23 +88,9 @@ def build_prompt_and_schema(payload: dict[str, Any]) -> tuple[str, dict[str, Any
         prompt = f"""
 You are helping a crossword tutor backend. Return JSON only.
 
-Task: Provide exactly one next-stage hint for a single cryptic clue.
-Do not solve the clue outright unless the requested hint level implies answer reveal.
-Keep the hint concise and useful to a human solver.
-Respect the clue-specific evidence already supplied.
-This tutor uses a strict staged hint ladder. Do not skip ahead.
-The supplied clue analysis is provisional evidence from a local heuristic, not guaranteed truth.
-You may disagree with the proposed clue type, definition side, indicator, or fodder if the clue suggests a better reading.
-When the evidence looks ambiguous, prefer cautious wording such as likely, may, or probably.
+Generate a five-level hint ladder for one cryptic clue. Use the supplied symbolicAnalysis as your starting point, but treat it as provisional and revise it if the clue clearly supports a better reading. Keep hints concise, clue-specific, and internally consistent.
 
-Return fields:
-- clueId
-- hintLevel
-- kind
-- text
-- confidence
-
-Clue context:
+Context:
 - clueId: {context['clueId']}
 - clue: {context['clue']}
 - enumeration: {context['enumeration']}
@@ -104,34 +102,27 @@ Clue context:
 - indicator: {context.get('indicator')}
 - fodderText: {context.get('fodderText')}
 - solverCandidates: {context.get('solverCandidates')}
+- symbolicAnalysis: {context.get('symbolicAnalysis')}
 - linkedEntries: {linked_entries}
 - referencedClues: {referenced_clues}
 
-Requested output semantics:
-- hintLevel must equal hintLevelAlreadyShown + 1
-- kind and text must match this ladder:
-  - Level 1: kind=clue_type. Identify the likely clue type only.
-    If the evidence is weak, say that no single clue type stands out yet and mention at most one possible signal word.
-    Do not invent a specific mechanism just to avoid uncertainty.
-  - Level 2: kind=structure. Mention high-level structure such as likely definition side and, if relevant, one possible indicator word.
-    If the parse is still unclear, say which clue words look most definition-like and which word may be doing cryptic work.
-    If a likely definition word may have a non-obvious crossword sense, you may nudge the solver to consider another meaning without naming the answer.
-    Do not mention fodder text, letter selection, candidate answers, or overcommit to a shaky parse.
-  - Level 3: kind=wordplay_focus. You may mention fodder text or the specific cryptic operation.
-    If the definition relies on a misleading surface sense, this is an appropriate stage to point that out explicitly.
-  - Level 4: kind=candidate_space. You may narrow the search space using pattern/checkers or meaning.
-    Do not suggest a synonym or candidate phrase that already satisfies the pattern or would amount to an obvious reveal.
-  - Level 5: kind=answer_reveal. Only now may you state the answer directly.
-    Only reveal an answer if you are genuinely confident it fits both the clue and the current pattern. If confidence is low or the clue seems whimsical, indirect, or weakly parsed, do not guess; instead say that no confident answer reveal is available yet.
-- text must be plain English, not markdown, and not mention internal backend machinery
-- For early hints, preserve challenge. Prefer the least revealing wording that still helps.
-- Before level 5, do not reveal the answer or use a near-synonym that effectively gives it away once combined with the pattern or enumeration. Avoid candidate synonyms that already fit the grid too closely.
-- At level 5, an uncertain guess is worse than no reveal. If the parse is shaky, answer_reveal should explicitly say that no confident reveal is available yet.
-- If a likely definition word may be using a less obvious crossword sense than its surface reading suggests, hint at that before giving away the answer. Say the solver should consider another meaning or a different sense, rather than assuming the everyday surface meaning.
-- If clueType=cryptic, indicator is null, and solverCandidates is empty, treat the clue as unresolved and be explicitly cautious at levels 1 and 2.
-- If linkedEntries is non-empty, treat this as a chained multi-entry clue whose answer spans those linked slots.
-- If referencedClues is non-empty, those clue IDs are meaningful clue context, not noise. Use solved answers when supplied, but do not assume every reference is structural.
-- For linked or reference-heavy clues, do not force a naive direct-definition reading if the clue instead looks like an anagram, quotation, or indirect clue built around the referenced entries.
+Return exactly five hints in order, with kinds fixed as:
+1 clue_type
+2 structure
+3 wordplay_focus
+4 candidate_space
+5 answer_reveal
+
+Rules:
+- Each level must add something new and remain consistent with later levels.
+- Level 1: identify only the likely clue family, or say no single type stands out.
+- Level 2: give high-level structure such as likely definition side and maybe one indicator word.
+- Level 3: mention the specific operation or fodder if helpful.
+- Level 4: narrow the search using meaning, enumeration, or checkers without effectively giving the answer away.
+- Level 5: reveal the answer only if genuinely confident; otherwise say no confident reveal is available yet.
+- Before level 5, do not reveal the answer or use a near-synonym that effectively reveals it.
+- If the clue has linkedEntries or referencedClues, use them as meaningful context.
+- Plain English only; no markdown; do not mention backend fields.
 """.strip()
         return prompt, NEXT_HINT_SCHEMA
 
@@ -139,31 +130,9 @@ Requested output semantics:
         prompt = f"""
 You are helping a crossword tutor backend. Return JSON only.
 
-Task: Judge whether a proposed answer matches the direct definition of a cryptic clue.
-The supplied clue analysis is provisional evidence from a local heuristic, not guaranteed truth.
-Use it as context, but do not assume the proposed definition side or clue type is correct if the clue suggests otherwise.
-Focus on semantic fit, part of speech, number, and natural crossword sense.
+Judge whether a proposed answer fits a cryptic clue. Use symbolicAnalysis as deterministic pre-LLM evidence, but do not treat it as guaranteed truth. Consider all plausible definition readings, natural crossword sense, part of speech, and number.
 
-Return fields:
-- result
-- reason
-- confidence
-
-Guidance:
-- Use 'confirmed' only if the answer matches the direct definition well.
-- Use 'plausible' if the answer could fit but you are not fully sure, or if the local analysis may be pointing at the wrong definition span.
-- If the proposed answer strongly matches a different plausible definition word or phrase in the clue than the current working guess, prefer 'plausible' or 'confirmed' and explain the correct reading positively.
-- Use 'conflict' only if the answer fails against all plausible definition readings of the clue, not merely the current working guess.
-- Do not reject an answer just because it overrules an earlier hint or heuristic guess about where the definition sits.
-- The reason must read naturally to a solver. Do not mention internal fields, backend analysis, discarded guesses, earlier assumptions, or that a different definition was previously supplied.
-- When you can identify the right reading, simply state it. Do not narrate the correction process.
-- For linked or reference-heavy clues, you may use linkedEntries and referencedClues to reverse-engineer whether the proposed answer fits the clue; do not force a simplistic direct-definition reading if the clue is clearly indirect.
-- Reason should be concise.
-- If the answer is confirmed and the cryptic construction is also clear from the supplied context, you may append a short explanation of the wordplay.
-- Do not invent a wordplay explanation if the construction is unclear.
-- If solverJustification is present, treat it as additional human evidence to evaluate. A good justification may support a plausible or confirmed result, but it is not an automatic override.
-
-Clue context:
+Context:
 - clueId: {context['clueId']}
 - clue: {context['clue']}
 - enumeration: {context['enumeration']}
@@ -174,10 +143,21 @@ Clue context:
 - indicator: {context.get('indicator')}
 - fodderText: {context.get('fodderText')}
 - solverCandidates: {context.get('solverCandidates')}
+- symbolicAnalysis: {context.get('symbolicAnalysis')}
 - linkedEntries: {linked_entries}
 - referencedClues: {referenced_clues}
 - solverJustification: {context.get('solverJustification')}
 - mechanicalResult: {context['mechanicalResult']}
+
+Rules:
+- confirmed: strong definition fit; include brief wordplay explanation if it is clear.
+- plausible: could fit, or the likely definition span may differ from the current guess.
+- conflict: fails against all plausible definition readings.
+- Do not reject an answer merely because it overturns an earlier parse guess.
+- If solverJustification is present, treat it as extra human evidence, not an automatic override.
+- Prefer explanation with both definition and wordplay for straightforward clues.
+- Inspect the clue itself for simple mechanisms such as anagram, containment, reversal, hidden answer, initial letters, charade, or homophone.
+- Keep the reason concise, natural, and free of backend/internal terminology.
 """.strip()
         return prompt, SEMANTIC_SCHEMA
 

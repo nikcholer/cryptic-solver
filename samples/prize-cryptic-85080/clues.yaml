@@ -1,0 +1,89 @@
+across:
+  8A:
+    clue: Poor grade's bagged in English university
+    enum: (7)
+  10A:
+    clue: Herb is on time after returning, else sooner
+    enum: (7)
+  11A:
+    clue: Question about composition and application for writer
+    enum: (9)
+  12A:
+    clue: Quickly and easily produced, I love terrace
+    enum: (5)
+  13A:
+    clue: Reason I put on record, coercion primarily
+    enum: (5)
+  14A:
+    clue: Batting, openers not out?
+    enum: (7)
+  17A:
+    clue: Team conversed with tsar or revolutionary
+    enum: (9,6)
+  19A:
+    clue: French author increasingly defending story
+    enum: (7)
+  21A:
+    clue: Copy between two lines, and fold
+    enum: (5)
+  24A:
+    clue: Joint below or bowel given treatment
+    enum: (5)
+  26A:
+    clue: Percussion instrument used to stop, when sounded?
+    enum: (9)
+  27A:
+    clue: Infinit?
+    enum: (7)
+  28A:
+    clue: Billion dollar contract? Pah!
+    enum: (3,4)
+down:
+  1D:
+    clue: Spiked wheel below widget ultimately for hand-held tool
+    enum: (6)
+  2D:
+    clue: King, say, one on horse up top
+    enum: (8)
+  3D:
+    clue: Dynamic change, hot I gathered
+    enum: (4-6)
+  4D:
+    clue: The role is complicated for those with paying guests
+    enum: (9)
+  5D:
+    clue: Little sound that may similarly rise and fall?
+    enum: (4)
+  6D:
+    clue: Rubbish as well, Scottish entertainer?
+    enum: (6)
+  7D:
+    clue: Big gun in business, defeat Uncle Sam
+    enum: (8)
+  9D:
+    clue: Little wriggler eats
+    enum: (4)
+  15D:
+    clue: Error in more than one drawing 23 Downs
+    enum: (10)
+  16D:
+    clue: Their woes compounded if not
+    enum: (9)
+  17D:
+    clue: Spoiler of fun, wet blanket, say?
+    enum: (8)
+  18D:
+    clue: Note on piano in melody wrongly used
+    enum: (8)
+  20D:
+    clue: Offer to put in fuel when up for drive
+    enum: (6)
+  22D:
+    clue: Fated flower cut by edges on knife
+    enum: (6)
+  23D:
+    clue: Incendiary device in packet?
+    enum: (4)
+  25D:
+    clue: "Stop pouring wine honey, enough now \u2013 for starters?"
+    enum: (4)

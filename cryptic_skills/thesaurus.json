@@ -1,0 +1,161 @@
+{
+  "author": {
+    "noun": [
+      "writer",
+      "novelist",
+      "poet",
+      "creator"
+    ]
+  },
+  "copy": {
+    "noun": [
+      "text",
+      "script",
+      "edition"
+    ],
+    "verb": [
+      "ape",
+      "clone",
+      "imitate",
+      "reproduce"
+    ]
+  },
+  "fold": {
+    "verb": [
+      "bend",
+      "crease",
+      "tuck"
+    ]
+  },
+  "quickly": {
+    "adverb": [
+      "fast",
+      "swiftly",
+      "rapidly",
+      "promptly"
+    ]
+  },
+  "story": {
+    "noun": [
+      "tale",
+      "plot",
+      "account",
+      "history",
+      "report"
+    ]
+  },
+  "team": {
+    "noun": [
+      "side",
+      "crew",
+      "squad",
+      "eleven"
+    ]
+  },
+  "reason": {
+    "noun": [
+      "cause",
+      "motive",
+      "grounds"
+    ]
+  },
+  "poor": {
+    "adjective": [
+      "bad",
+      "weak",
+      "inferior"
+    ]
+  },
+  "question": {
+    "noun": [
+      "query",
+      "problem",
+      "issue"
+    ],
+    "verb": [
+      "ask",
+      "query",
+      "doubt"
+    ]
+  },
+  "joint": {
+    "noun": [
+      "knee",
+      "elbow",
+      "hinge",
+      "union"
+    ]
+  },
+  "offer": {
+    "verb": [
+      "propose",
+      "bid",
+      "tender"
+    ]
+  },
+  "fated": {
+    "adjective": [
+      "doomed",
+      "destined"
+    ]
+  },
+  "error": {
+    "noun": [
+      "mistake",
+      "blunder",
+      "fault"
+    ]
+  },
+  "dynamic": {
+    "adjective": [
+      "active",
+      "energetic",
+      "forceful"
+    ]
+  },
+  "king": {
+    "noun": [
+      "rex",
+      "monarch",
+      "ruler"
+    ]
+  },
+  "tool": {
+    "noun": [
+      "implement",
+      "device",
+      "utensil"
+    ]
+  },
+  "herb": {
+    "noun": [
+      "sage",
+      "thyme",
+      "mint",
+      "basil"
+    ]
+  },
+  "billion": {
+    "noun": [
+      "thousand million"
+    ]
+  },
+  "contract": {
+    "noun": [
+      "deal",
+      "agreement",
+      "bond"
+    ],
+    "verb": [
+      "shrink",
+      "narrow"
+    ]
+  },
+  "writer": {
+    "noun": [
+      "author",
+      "novelist",
+      "scribe"
+    ]
+  }
+}

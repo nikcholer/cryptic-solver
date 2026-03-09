@@ -4,13 +4,18 @@ import type {
   GridCell,
   PuzzleClue,
   PuzzleDefinition,
+  PuzzleListResponse,
   PuzzleResponse,
   SessionResponse,
   SessionState,
+  ThesaurusLookupResponse,
 } from '../types';
 
 const DEFAULT_PUZZLE_ID = import.meta.env.VITE_PUZZLE_ID ?? 'cryptic-2026-03-03';
-const SESSION_STORAGE_KEY = `cryptic-tutor-session:${DEFAULT_PUZZLE_ID}`;
+
+function sessionStorageKey(puzzleId: string): string {
+  return `cryptic-tutor-session:${puzzleId}`;
+}
 
 async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
   const response = await fetch(input, {
@@ -29,24 +34,34 @@ async function fetchJson<T>(input: RequestInfo, init?: RequestInit): Promise<T> 
   return (await response.json()) as T;
 }
 
-function getStoredSessionId(): string | null {
+function getStoredSessionId(puzzleId: string): string | null {
   try {
-    return window.localStorage.getItem(SESSION_STORAGE_KEY);
+    return window.localStorage.getItem(sessionStorageKey(puzzleId));
   } catch {
     return null;
   }
 }
 
-function storeSessionId(sessionId: string | null): void {
+function storeSessionId(puzzleId: string, sessionId: string | null): void {
   try {
+    const key = sessionStorageKey(puzzleId);
     if (sessionId) {
-      window.localStorage.setItem(SESSION_STORAGE_KEY, sessionId);
+      window.localStorage.setItem(key, sessionId);
     } else {
-      window.localStorage.removeItem(SESSION_STORAGE_KEY);
+      window.localStorage.removeItem(key);
     }
   } catch {
     // Ignore storage issues and continue with ephemeral sessions.
   }
+}
+
+async function fetchFormJson<T>(input: RequestInfo, body: FormData): Promise<T> {
+  const response = await fetch(input, { method: 'POST', body });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `${response.status} ${response.statusText}`);
+  }
+  return (await response.json()) as T;
 }
 
 function iterateClueCells(clue: PuzzleClue, clues: Record<string, PuzzleClue>): Array<[number, number]> {
@@ -80,11 +95,15 @@ function sortClues(clues: Record<string, PuzzleClue>) {
 }
 
 export function useTutorSession() {
+  const [availablePuzzleIds, setAvailablePuzzleIds] = useState<string[]>([]);
+  const [currentPuzzleId, setCurrentPuzzleId] = useState(DEFAULT_PUZZLE_ID);
   const [puzzle, setPuzzle] = useState<PuzzleDefinition | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionState, setSessionState] = useState<SessionState | null>(null);
   const [draftAnswer, setDraftAnswer] = useState('');
   const [justification, setJustification] = useState('');
+  const [thesaurusTerm, setThesaurusTerm] = useState('');
+  const [thesaurusCandidates, setThesaurusCandidates] = useState<ThesaurusLookupResponse['candidates']>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,34 +115,38 @@ export function useTutorSession() {
       setIsLoading(true);
       setError(null);
       try {
-        const puzzleResponse = await fetchJson<PuzzleResponse>(`/api/puzzles/${DEFAULT_PUZZLE_ID}`);
+        const [listResponse, puzzleResponse] = await Promise.all([
+          fetchJson<PuzzleListResponse>('/api/puzzles'),
+          fetchJson<PuzzleResponse>(`/api/puzzles/${currentPuzzleId}`),
+        ]);
         let sessionResponse: SessionResponse | CreateSessionResponse | null = null;
-        const storedSessionId = getStoredSessionId();
+        const storedSessionId = getStoredSessionId(currentPuzzleId);
 
         if (storedSessionId) {
           try {
             const resumed = await fetchJson<SessionResponse>(`/api/sessions/${storedSessionId}`);
-            if (resumed.puzzle.puzzle_id === DEFAULT_PUZZLE_ID) {
+            if (resumed.puzzle.puzzle_id === currentPuzzleId) {
               sessionResponse = resumed;
             } else {
-              storeSessionId(null);
+              storeSessionId(currentPuzzleId, null);
             }
           } catch {
-            storeSessionId(null);
+            storeSessionId(currentPuzzleId, null);
           }
         }
 
         if (!sessionResponse) {
           sessionResponse = await fetchJson<CreateSessionResponse>('/api/sessions', {
             method: 'POST',
-            body: JSON.stringify({ puzzleId: DEFAULT_PUZZLE_ID }),
+            body: JSON.stringify({ puzzleId: currentPuzzleId }),
           });
-          storeSessionId(sessionResponse.sessionId);
+          storeSessionId(currentPuzzleId, sessionResponse.sessionId);
         }
 
         if (cancelled) return;
 
         startTransition(() => {
+          setAvailablePuzzleIds(listResponse.puzzles.map((item) => item.puzzleId));
           setPuzzle(puzzleResponse.puzzle);
           setSessionId(sessionResponse.sessionId);
           setSessionState(sessionResponse.sessionState);
@@ -145,7 +168,7 @@ export function useTutorSession() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [currentPuzzleId]);
 
   const selectedClue = useMemo(() => {
     if (!puzzle || !sessionState?.selectedClueId) {
@@ -158,11 +181,18 @@ export function useTutorSession() {
     if (!selectedClue || !sessionState) {
       setDraftAnswer('');
       setJustification('');
+      setThesaurusTerm('');
+      setThesaurusCandidates([]);
       return;
     }
 
     const existing = sessionState.entries[selectedClue.id]?.answer ?? '';
     setDraftAnswer(existing);
+    setThesaurusTerm('');
+    setThesaurusCandidates([]);
+  }, [selectedClue?.id, sessionState?.entries, sessionState]);
+
+  useEffect(() => {
     setJustification('');
   }, [selectedClue?.id]);
 
@@ -244,11 +274,67 @@ export function useTutorSession() {
   const acrossClues = clueList.filter((clue) => clue.direction === 'Across');
   const downClues = clueList.filter((clue) => clue.direction === 'Down');
 
-  async function refreshSession(nextSessionId: string) {
+  async function refreshSession(nextSessionId: string, puzzleId = currentPuzzleId) {
     const response = await fetchJson<SessionResponse>(`/api/sessions/${nextSessionId}`);
-    storeSessionId(response.sessionId);
+    storeSessionId(puzzleId, response.sessionId);
     startTransition(() => {
       setSessionState(response.sessionState);
+      setPuzzle(response.puzzle);
+      setSessionId(response.sessionId);
+    });
+  }
+
+  async function uploadPdf(file: File) {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const response = await fetchFormJson<SessionResponse>('/api/imports/pdf', form);
+      storeSessionId(response.puzzle.puzzle_id, response.sessionId);
+      startTransition(() => {
+        setAvailablePuzzleIds((current) => Array.from(new Set([...current, response.puzzle.puzzle_id])).sort());
+        setCurrentPuzzleId(response.puzzle.puzzle_id);
+        setPuzzle(response.puzzle);
+        setSessionId(response.sessionId);
+        setSessionState(response.sessionState);
+        setDraftAnswer('');
+        setJustification('');
+      });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Unable to import PDF puzzle.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function lookupThesaurus() {
+    if (!selectedClue || !thesaurusTerm.trim()) {
+      setThesaurusCandidates([]);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({ term: thesaurusTerm.trim(), length: String(selectedClue.answer_length) });
+      const response = await fetchJson<ThesaurusLookupResponse>(`/api/thesaurus?${params.toString()}`);
+      setThesaurusCandidates(response.candidates);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Unable to look up thesaurus entries.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function choosePuzzle(puzzleId: string) {
+    if (puzzleId === currentPuzzleId) {
+      return;
+    }
+    startTransition(() => {
+      setCurrentPuzzleId(puzzleId);
+      setDraftAnswer('');
+      setJustification('');
     });
   }
 
@@ -370,6 +456,9 @@ export function useTutorSession() {
 
   return {
     puzzle,
+    availablePuzzleIds,
+    currentPuzzleId,
+    choosePuzzle,
     sessionId,
     sessionState,
     grid,
@@ -380,9 +469,14 @@ export function useTutorSession() {
     setDraftAnswer,
     justification,
     setJustification,
+    thesaurusTerm,
+    setThesaurusTerm,
+    thesaurusCandidates,
     isLoading,
     isSubmitting,
     error,
+    uploadPdf,
+    lookupThesaurus,
     selectClue,
     selectCell,
     submitAnswer,

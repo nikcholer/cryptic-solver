@@ -1,3 +1,4 @@
+import type { ChangeEvent } from 'react';
 import { ClueList } from './components/ClueList';
 import { ClueWorkspace } from './components/ClueWorkspace';
 import { CrosswordGrid } from './components/CrosswordGrid';
@@ -7,6 +8,9 @@ import './index.css';
 export function App() {
   const {
     puzzle,
+    availablePuzzleIds,
+    currentPuzzleId,
+    choosePuzzle,
     sessionId,
     sessionState,
     grid,
@@ -17,9 +21,14 @@ export function App() {
     setDraftAnswer,
     justification,
     setJustification,
+    thesaurusTerm,
+    setThesaurusTerm,
+    thesaurusCandidates,
     isLoading,
     isSubmitting,
     error,
+    uploadPdf,
+    lookupThesaurus,
     selectClue,
     selectCell,
     submitAnswer,
@@ -27,6 +36,13 @@ export function App() {
     clearAnswer,
     requestNextHint,
   } = useTutorSession();
+
+  async function handlePdfSelected(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    await uploadPdf(file);
+  }
 
   if (isLoading) {
     return (
@@ -56,17 +72,32 @@ export function App() {
           <p className="app-kicker">Interactive cryptic tutorial</p>
           <h1>Cryptic Tutor</h1>
         </div>
-        <div className="session-chip-group">
-          <span className="session-chip">Puzzle {puzzle.puzzle_id}</span>
-          {sessionId && <span className="session-chip muted">Session {sessionId}</span>}
-          <span className="session-chip usage-chip">Input {formatTokens(sessionState.runtimeUsage.input_tokens)}</span>
-          <span className="session-chip usage-chip">Output {formatTokens(sessionState.runtimeUsage.output_tokens)}</span>
-          {sessionState.runtimeUsage.cached_input_tokens > 0 ? (
-            <span className="session-chip usage-chip muted">
-              Cached {formatTokens(sessionState.runtimeUsage.cached_input_tokens)}
-            </span>
-          ) : null}
-          <span className="session-chip usage-chip muted">Calls {formatTokens(sessionState.runtimeUsage.requests)}</span>
+        <div className="header-actions">
+          <label className={`upload-btn ${isSubmitting ? 'disabled' : ''}`}>
+            <input type="file" accept="application/pdf" onChange={handlePdfSelected} disabled={isSubmitting} />
+            Upload PDF
+          </label>
+          <div className="session-chip-group">
+            <label className="puzzle-picker">
+              <span className="sr-only">Choose puzzle</span>
+              <select value={currentPuzzleId} onChange={(event) => choosePuzzle(event.target.value)} disabled={isSubmitting}>
+                {availablePuzzleIds.map((puzzleId) => (
+                  <option key={puzzleId} value={puzzleId}>
+                    {puzzleId}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {sessionId && <span className="session-chip muted">Session {sessionId}</span>}
+            <span className="session-chip usage-chip">Input {formatTokens(sessionState.runtimeUsage.input_tokens)}</span>
+            <span className="session-chip usage-chip">Output {formatTokens(sessionState.runtimeUsage.output_tokens)}</span>
+            {sessionState.runtimeUsage.cached_input_tokens > 0 ? (
+              <span className="session-chip usage-chip muted">
+                Cached {formatTokens(sessionState.runtimeUsage.cached_input_tokens)}
+              </span>
+            ) : null}
+            <span className="session-chip usage-chip muted">Calls {formatTokens(sessionState.runtimeUsage.requests)}</span>
+          </div>
         </div>
       </header>
 
@@ -96,7 +127,11 @@ export function App() {
             draftAnswer={draftAnswer}
             onDraftAnswerChange={setDraftAnswer}
             justification={justification}
+            thesaurusTerm={thesaurusTerm}
+            thesaurusCandidates={thesaurusCandidates}
             onJustificationChange={setJustification}
+            onThesaurusTermChange={setThesaurusTerm}
+            onLookupThesaurus={lookupThesaurus}
             onSubmitAnswer={submitAnswer}
             onAcceptAnswer={acceptAnswer}
             onClearAnswer={clearAnswer}

@@ -14,7 +14,7 @@ from app.models.common import HintKind, ValidationResult
 from app.models.puzzle import PuzzleClue, PuzzleDefinition
 from app.models.session import SessionState
 from app.runtime.payloads import build_next_hint_request, build_semantic_judgement_request
-from app.runtime.schemas import NextHintResponse, SemanticJudgementResponse
+from app.runtime.schemas import HintPlanEntry, NextHintResponse, SemanticJudgementResponse
 
 _WORD_RE = re.compile(r"[A-Za-z']+")
 
@@ -28,6 +28,7 @@ ANAGRAM_INDICATORS = [
     'drunk',
     'mixed',
     'rearranged',
+    'revolutionary',
     'scrambled',
     'shattered',
     'wobbly',
@@ -54,6 +55,7 @@ CONTAINER_INDICATORS = [
     'around',
     'boarding',
     'clutching',
+    'defending',
     'holding',
     'in',
     'inside',
@@ -61,6 +63,13 @@ CONTAINER_INDICATORS = [
     'within',
 ]
 CHARADE_LINKERS = ['with', 'after', 'before', 'beside', 'next to']
+INITIALS_INDICATORS = [
+    'for starters',
+    'at first',
+    'first off',
+    'initially',
+    'to start',
+]
 
 
 class RuntimeAdapter(Protocol):
@@ -185,12 +194,12 @@ class StubRuntimeAdapter:
             4: (HintKind.CANDIDATE_SPACE, f'Use the current pattern {pattern} to narrow candidates.'),
             5: (HintKind.ANSWER_REVEAL, 'Answer reveal is not available in the stub runtime.'),
         }
-        kind, text = hint_map.get(next_level, hint_map[5])
         return {
             'clueId': clue.id,
-            'hintLevel': next_level,
-            'kind': kind,
-            'text': text,
+            'hints': [
+                {'level': level, 'kind': kind, 'text': text}
+                for level, (kind, text) in hint_map.items()
+            ],
             'confidence': 0.25,
         }
 
@@ -233,13 +242,14 @@ class HeuristicRuntimeAdapter:
         runtime_result = self._runtime_next_hint(clue, pattern, next_level, analysis, puzzle, session)
         if runtime_result is not None:
             return runtime_result
-        kind, text = self._hint_for_level(clue, pattern, analysis, next_level)
+        hints = []
+        for level in range(1, 6):
+            kind, text = self._hint_for_level(clue, pattern, analysis, level)
+            hints.append({'level': level, 'kind': kind, 'text': text})
         return {
             'clueId': clue.id,
-            'hintLevel': next_level,
-            'kind': kind,
-            'text': text,
-            'confidence': self._confidence_for_hint(analysis, next_level),
+            'hints': hints,
+            'confidence': self._confidence_for_hint(analysis, 2),
         }
 
     def validate_answer(
@@ -263,7 +273,7 @@ class HeuristicRuntimeAdapter:
         if answer in analysis.solver_candidates:
             result = _result(clue.id, ValidationResult.CONFIRMED, self._confirmed_reason(analysis, answer), 0.93)
             return self._apply_semantic_judgement(clue, analysis, answer, result, puzzle, session, solver_justification)
-        if analysis.solver_candidates and analysis.clue_type in {'anagram', 'hidden', 'reversal'}:
+        if analysis.solver_candidates and analysis.clue_type in {'anagram', 'hidden', 'reversal', 'initials'}:
             candidates = ', '.join(candidate.upper() for candidate in analysis.solver_candidates[:3])
             return _result(clue.id, ValidationResult.CONFLICT, f'Current wordplay analysis points elsewhere: {candidates}.', 0.78)
         if answer.lower() in self.wordlist:
@@ -300,9 +310,14 @@ class HeuristicRuntimeAdapter:
             return None
         result = {
             'clueId': parsed.clueId,
-            'hintLevel': parsed.hintLevel,
-            'kind': HintKind(parsed.kind),
-            'text': parsed.text,
+            'hints': [
+                {
+                    'level': hint.level,
+                    'kind': HintKind(hint.kind),
+                    'text': hint.text,
+                }
+                for hint in parsed.hints
+            ],
             'confidence': parsed.confidence,
         }
         if usage is not None:
@@ -345,9 +360,9 @@ class HeuristicRuntimeAdapter:
         for phrase in HIDDEN_INDICATORS:
             if phrase in multiword_positions:
                 return 'hidden', phrase, multiword_positions[phrase]
-        for phrase in CHARADE_LINKERS:
+        for phrase in INITIALS_INDICATORS:
             if phrase in multiword_positions:
-                return 'charade', phrase, multiword_positions[phrase]
+                return 'initials', phrase, multiword_positions[phrase]
         for index, word in enumerate(words):
             if word in ANAGRAM_INDICATORS:
                 return 'anagram', word, index
@@ -355,6 +370,9 @@ class HeuristicRuntimeAdapter:
                 return 'reversal', word, index
             if word in CONTAINER_INDICATORS and len(words) <= 6:
                 return 'container', word, index
+        for phrase in CHARADE_LINKERS:
+            if phrase in multiword_positions:
+                return 'charade', phrase, multiword_positions[phrase]
         if len(words) <= 4:
             return 'double_definition', None, None
         return 'cryptic', None, None
@@ -362,7 +380,7 @@ class HeuristicRuntimeAdapter:
     def _find_multiword_indicator_positions(self, words: list[str]) -> dict[str, int]:
         lowered_words = [word.lower() for word in words]
         positions: dict[str, int] = {}
-        for phrase in HIDDEN_INDICATORS + CHARADE_LINKERS:
+        for phrase in HIDDEN_INDICATORS + CHARADE_LINKERS + INITIALS_INDICATORS:
             phrase_words = phrase.split()
             for index in range(len(lowered_words) - len(phrase_words) + 1):
                 if lowered_words[index:index + len(phrase_words)] == phrase_words:
@@ -401,6 +419,13 @@ class HeuristicRuntimeAdapter:
             if definition_side == 'end':
                 return words[: indicator_index or 0]
             return words[start:]
+        if clue_type == 'initials' and indicator is not None and indicator_index is not None:
+            phrase_words = indicator.split()
+            if definition_side == 'start':
+                return words[2:indicator_index]
+            if definition_side == 'end':
+                return words[indicator_index + len(phrase_words):-1]
+            return words[:indicator_index]
         return []
 
     def _solver_candidates(self, clue: PuzzleClue, clue_type: str, pattern: str, fodder_words: list[str], indicator_index: int | None, words: list[str]) -> list[str]:
@@ -423,10 +448,27 @@ class HeuristicRuntimeAdapter:
             inner = words[indicator_index + 1]
             result = self._run_solver('insertion.py', ['--outer', outer, '--fodder', inner, '--pattern', clean_pattern])
             return [candidate['candidate'].upper() for candidate in result.get('candidates', [])]
+        if clue_type == 'initials':
+            return self._initials_candidates(words, clean_pattern)
         if clue_type == 'charade' and len(words) >= 2:
             result = self._run_solver('charade.py', ['--components', words[0], words[-1], '--pattern', clean_pattern])
             return [candidate['candidate'].upper() for candidate in result.get('candidates', [])]
         return []
+
+    def _initials_candidates(self, words: list[str], pattern: str) -> list[str]:
+        target_length = len(pattern)
+        candidates: list[str] = []
+        for start in range(len(words)):
+            for end in range(start + target_length, len(words) + 1):
+                window = words[start:end]
+                if len(window) != target_length:
+                    continue
+                initials = ''.join(word[0].upper() for word in window if word)
+                if len(initials) != target_length:
+                    continue
+                if _matches_pattern(initials, pattern) and initials not in candidates:
+                    candidates.append(initials)
+        return candidates
 
     def _run_solver(self, script_name: str, args: list[str]) -> dict[str, object]:
         script_path = self.skills_dir / script_name
@@ -456,6 +498,8 @@ class HeuristicRuntimeAdapter:
             return 'This looks like a hidden-word clue.'
         if analysis.clue_type == 'reversal':
             return 'This looks like a reversal clue.'
+        if analysis.clue_type == 'initials':
+            return 'This looks like an initial-letters clue.'
         if analysis.clue_type == 'container':
             return 'This looks like a container or insertion clue.'
         if analysis.clue_type == 'double_definition':
@@ -477,6 +521,8 @@ class HeuristicRuntimeAdapter:
             return f"Look for a contiguous {analysis.fodder_text!r} substring that matches the answer length."
         if analysis.clue_type == 'reversal' and analysis.fodder_text:
             return f"A short piece of fodder near the indicator may need reversing: '{analysis.fodder_text}'."
+        if analysis.clue_type == 'initials' and analysis.fodder_text:
+            return f"Try taking the initial letters of '{analysis.fodder_text}'."
         if analysis.clue_type == 'container':
             return 'Try placing one short element inside another rather than reading the clue straight through.'
         return 'Focus on possible indicator words, abbreviations, and where the definition begins or ends.'
@@ -494,7 +540,7 @@ class HeuristicRuntimeAdapter:
         return 'No confident answer reveal is available yet from the local tooling.'
 
     def _confidence_for_hint(self, analysis: Analysis, level: int) -> float:
-        if analysis.clue_type in {'anagram', 'hidden', 'reversal'}:
+        if analysis.clue_type in {'anagram', 'hidden', 'reversal', 'initials'}:
             return 0.85 if level >= 2 else 0.78
         if analysis.clue_type in {'container', 'charade', 'double_definition'}:
             return 0.6
@@ -507,6 +553,8 @@ class HeuristicRuntimeAdapter:
             return f"Can be read directly from the hidden-letter fodder '{analysis.fodder_text}'."
         if analysis.clue_type == 'reversal' and analysis.fodder_text:
             return f"Matches a reversal parse built from '{analysis.fodder_text}'."
+        if analysis.clue_type == 'initials' and analysis.fodder_text and analysis.indicator:
+            return f"Matches an initial-letters parse from '{analysis.fodder_text}', signalled by '{analysis.indicator}'."
         return f'{answer} fits the strongest local wordplay analysis for this clue.'
 
     def _load_wordlist(self, path: Path) -> set[str]:

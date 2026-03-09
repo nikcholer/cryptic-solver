@@ -22,6 +22,17 @@ class MechanicalResult(BaseModel):
     confidence: float | None = None
 
 
+class SymbolicAnalysis(BaseModel):
+    clueType: str
+    definitionText: str
+    definitionSide: str
+    indicator: str | None = None
+    fodderText: str | None = None
+    solverCandidates: list[str] = Field(default_factory=list)
+    confidence: float | None = None
+    notes: list[str] = Field(default_factory=list)
+
+
 class SemanticJudgementContext(BaseModel):
     clueId: str
     clue: str
@@ -34,6 +45,7 @@ class SemanticJudgementContext(BaseModel):
     indicator: str | None = None
     fodderText: str | None = None
     solverCandidates: list[str]
+    symbolicAnalysis: SymbolicAnalysis
     linkedEntries: list[str] = Field(default_factory=list)
     referencedClues: list[ReferencedClueContext] = Field(default_factory=list)
     solverJustification: str | None = None
@@ -52,6 +64,7 @@ class NextHintContext(BaseModel):
     indicator: str | None = None
     fodderText: str | None = None
     solverCandidates: list[str]
+    symbolicAnalysis: SymbolicAnalysis
     linkedEntries: list[str] = Field(default_factory=list)
     referencedClues: list[ReferencedClueContext] = Field(default_factory=list)
 
@@ -86,9 +99,15 @@ class SemanticJudgementResponse(BaseModel):
     confidence: float | None = None
 
 
-class NextHintResponse(BaseModel):
-    clueId: str
-    hintLevel: int
+
+
+class HintPlanEntry(BaseModel):
+    level: int
     kind: Literal['clue_type', 'structure', 'wordplay_focus', 'candidate_space', 'answer_reveal']
     text: str
+
+
+class NextHintResponse(BaseModel):
+    clueId: str
+    hints: list[HintPlanEntry]
     confidence: float | None = None

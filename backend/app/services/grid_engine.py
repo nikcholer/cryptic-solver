@@ -85,9 +85,11 @@ class GridEngine:
 
     def _reset_pattern_sensitive_hints(self, clue_state: ClueState) -> None:
         if clue_state.hint_level_shown <= 2:
+            clue_state.hint_plan = []
             return
         clue_state.hints = [hint for hint in clue_state.hints if hint.level <= 2]
         clue_state.hint_level_shown = 2 if clue_state.hints else 0
+        clue_state.hint_plan = []
 
     def make_entry_record(self, answer: str, result: ValidationResult | str, source: str = 'user') -> EntryRecord:
         normalized_result = result if isinstance(result, ValidationResult) else ValidationResult(result)

@@ -1,12 +1,16 @@
-import type { ClueState, PuzzleClue } from '../types';
+import type { ClueState, PuzzleClue, ThesaurusCandidate } from '../types';
 
 interface ClueWorkspaceProps {
   clue: PuzzleClue | null;
   clueState: ClueState | null;
   draftAnswer: string;
   justification: string;
+  thesaurusTerm: string;
+  thesaurusCandidates: ThesaurusCandidate[];
   onDraftAnswerChange: (nextValue: string) => void;
   onJustificationChange: (nextValue: string) => void;
+  onThesaurusTermChange: (nextValue: string) => void;
+  onLookupThesaurus: () => void;
   onSubmitAnswer: () => void;
   onAcceptAnswer: () => void;
   onClearAnswer: () => void;
@@ -19,8 +23,12 @@ export function ClueWorkspace({
   clueState,
   draftAnswer,
   justification,
+  thesaurusTerm,
+  thesaurusCandidates,
   onDraftAnswerChange,
   onJustificationChange,
+  onThesaurusTermChange,
+  onLookupThesaurus,
   onSubmitAnswer,
   onAcceptAnswer,
   onClearAnswer,
@@ -118,6 +126,42 @@ export function ClueWorkspace({
           <p>{clueState.validation.reason}</p>
         </div>
       )}
+
+      <section className="thesaurus-panel">
+        <div className="hint-card-header">
+          <span>Explore definition</span>
+          <span>{clue.answer_length} letters</span>
+        </div>
+        <div className="thesaurus-controls">
+          <input
+            value={thesaurusTerm}
+            onChange={(event) => onThesaurusTermChange(event.target.value)}
+            className="thesaurus-input"
+            placeholder="e.g. story, writer, team"
+            disabled={isBusy}
+          />
+          <button
+            type="button"
+            className="action-btn"
+            onClick={onLookupThesaurus}
+            disabled={isBusy || thesaurusTerm.trim().length === 0}
+          >
+            Lookup
+          </button>
+        </div>
+        {thesaurusCandidates.length ? (
+          <div className="thesaurus-results">
+            {thesaurusCandidates.map((candidate) => (
+              <span key={`${candidate.word}-${candidate.pos ?? 'any'}`} className="thesaurus-chip">
+                {candidate.word}
+                {candidate.pos ? ` (${candidate.pos})` : ''}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="hint-empty">No local thesaurus results yet.</p>
+        )}
+      </section>
 
       <div className="hint-stack">
         <h3>Hints shown</h3>

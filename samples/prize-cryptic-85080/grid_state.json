@@ -1,0 +1,193 @@
+{
+  "width": 15,
+  "height": 15,
+  "clues": {
+    "1D": {
+      "x": 0,
+      "y": 0,
+      "length": 6,
+      "direction": "Down"
+    },
+    "2D": {
+      "x": 2,
+      "y": 0,
+      "length": 8,
+      "direction": "Down"
+    },
+    "3D": {
+      "x": 4,
+      "y": 0,
+      "length": 10,
+      "direction": "Down"
+    },
+    "4D": {
+      "x": 8,
+      "y": 0,
+      "length": 9,
+      "direction": "Down"
+    },
+    "5D": {
+      "x": 10,
+      "y": 0,
+      "length": 4,
+      "direction": "Down"
+    },
+    "6D": {
+      "x": 12,
+      "y": 0,
+      "length": 6,
+      "direction": "Down"
+    },
+    "7D": {
+      "x": 14,
+      "y": 0,
+      "length": 8,
+      "direction": "Down"
+    },
+    "8A": {
+      "x": 0,
+      "y": 1,
+      "length": 7,
+      "direction": "Across"
+    },
+    "9D": {
+      "x": 6,
+      "y": 1,
+      "length": 4,
+      "direction": "Down"
+    },
+    "10A": {
+      "x": 8,
+      "y": 1,
+      "length": 7,
+      "direction": "Across"
+    },
+    "11A": {
+      "x": 0,
+      "y": 3,
+      "length": 9,
+      "direction": "Across"
+    },
+    "12A": {
+      "x": 10,
+      "y": 3,
+      "length": 5,
+      "direction": "Across"
+    },
+    "13A": {
+      "x": 0,
+      "y": 5,
+      "length": 5,
+      "direction": "Across"
+    },
+    "14A": {
+      "x": 8,
+      "y": 5,
+      "length": 7,
+      "direction": "Across"
+    },
+    "15D": {
+      "x": 10,
+      "y": 5,
+      "length": 10,
+      "direction": "Down"
+    },
+    "16D": {
+      "x": 6,
+      "y": 6,
+      "length": 9,
+      "direction": "Down"
+    },
+    "17A": {
+      "x": 0,
+      "y": 7,
+      "length": 15,
+      "direction": "Across"
+    },
+    "17D": {
+      "x": 0,
+      "y": 7,
+      "length": 8,
+      "direction": "Down"
+    },
+    "18D": {
+      "x": 12,
+      "y": 7,
+      "length": 8,
+      "direction": "Down"
+    },
+    "19A": {
+      "x": 0,
+      "y": 9,
+      "length": 7,
+      "direction": "Across"
+    },
+    "20D": {
+      "x": 2,
+      "y": 9,
+      "length": 6,
+      "direction": "Down"
+    },
+    "21A": {
+      "x": 10,
+      "y": 9,
+      "length": 5,
+      "direction": "Across"
+    },
+    "22D": {
+      "x": 14,
+      "y": 9,
+      "length": 6,
+      "direction": "Down"
+    },
+    "23D": {
+      "x": 8,
+      "y": 10,
+      "length": 4,
+      "direction": "Down"
+    },
+    "24A": {
+      "x": 0,
+      "y": 11,
+      "length": 5,
+      "direction": "Across"
+    },
+    "25D": {
+      "x": 4,
+      "y": 11,
+      "length": 4,
+      "direction": "Down"
+    },
+    "26A": {
+      "x": 6,
+      "y": 11,
+      "length": 9,
+      "direction": "Across"
+    },
+    "27A": {
+      "x": 0,
+      "y": 13,
+      "length": 7,
+      "direction": "Across"
+    },
+    "28A": {
+      "x": 8,
+      "y": 13,
+      "length": 7,
+      "direction": "Across"
+    }
+  },
+  "_debug": {
+    "source": "pdf-vector",
+    "grid_transform": [
+      0.9375,
+      0.0,
+      0.0,
+      0.9375,
+      540.625,
+      262.5
+    ],
+    "white_cell_count": 151,
+    "numbered_cells": 28
+  }
+}
