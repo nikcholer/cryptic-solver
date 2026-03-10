@@ -15,9 +15,12 @@ BACKEND_ROOT = REPO_ROOT / "backend"
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
-from app.runtime.adapter import HeuristicRuntimeAdapter  # noqa: E402
+from app.runtime.adapter import HeuristicRuntimeAdapter, StubRuntimeAdapter  # noqa: E402
 from app.runtime.payloads import build_next_hint_request, build_semantic_judgement_request  # noqa: E402
+from app.services.grid_engine import GridEngine  # noqa: E402
 from app.services.puzzle_loader import PuzzleLoader  # noqa: E402
+from app.services.session_service import SessionService  # noqa: E402
+from app.stores.session_store import SessionStore  # noqa: E402
 
 
 DEFAULT_CASES = [
@@ -71,6 +74,7 @@ def main() -> int:
     adapter = HeuristicRuntimeAdapter(REPO_ROOT)
     grid_state = json.loads((REPO_ROOT / "samples" / args.puzzle_id / "grid_state.json").read_text(encoding="utf-8"))
     placed_answers = {key.upper(): value.upper() for key, value in grid_state.get("placed_answers", {}).items()}
+    session = build_reference_session(puzzle, placed_answers)
 
     cases = load_cases(args.cases_file)
     wrapper = REPO_ROOT / "backend" / "runtime_wrappers" / "codex_runtime.py"
@@ -84,8 +88,10 @@ def main() -> int:
         pattern = "." * clue.answer_length
         analysis = adapter._analyze_clue(clue, pattern)
         answer = placed_answers.get(clue_id, "")
-        hint_request = build_next_hint_request(clue, pattern, 1, analysis)
+        hint_request = build_next_hint_request(puzzle, session, clue, pattern, 1, analysis)
         semantic_request = build_semantic_judgement_request(
+            puzzle,
+            session,
             clue,
             analysis,
             answer,
@@ -173,6 +179,25 @@ def build_profiles(include_codex_53: bool) -> list[dict[str, Any]]:
     return profiles
 
 
+def build_reference_session(puzzle, placed_answers: dict[str, str]):
+    service = SessionService(SessionStore(REPO_ROOT / "backend_data" / "edge-case-eval"), GridEngine(), StubRuntimeAdapter())
+    session = service.create_session(puzzle)
+    for clue_id, answer in placed_answers.items():
+        if clue_id not in puzzle.clues:
+            continue
+        session.entries[clue_id] = service.grid_engine.make_entry_record(answer, "confirmed")
+    rebuilt_cells = service.grid_engine.rebuild_cells_from_entries(puzzle, session)
+    service.grid_engine.update_session_from_cells(puzzle, session, rebuilt_cells)
+    return session
+
+
+def resolve_codex_runtime_executable(env: dict[str, str]) -> str | None:
+    explicit = env.get("CODEX_RUNTIME_EXECUTABLE", "").strip()
+    if explicit:
+        return explicit
+    return None
+
+
 def invoke_wrapper(wrapper: Path, payload: Any, env_patch: dict[str, str]) -> RuntimeCallResult:
     env = os.environ.copy()
     if "CODEX_RUNTIME_EXECUTABLE" not in env:
@@ -182,6 +207,16 @@ def invoke_wrapper(wrapper: Path, payload: Any, env_patch: dict[str, str]) -> Ru
             "(e.g. 'powershell -ExecutionPolicy Bypass -File /path/to/codex.ps1')."
         )
     env.update(env_patch)
+    runtime_executable = resolve_codex_runtime_executable(env)
+    if not runtime_executable:
+        return RuntimeCallResult(
+            returncode=127,
+            stdout="",
+            stderr="Codex runtime executable not configured. Set CODEX_RUNTIME_EXECUTABLE to enable wrapper evaluation.",
+            parsed=None,
+        )
+    env["CODEX_RUNTIME_EXECUTABLE"] = runtime_executable
+    env.setdefault("CODEX_RUNTIME_TIMEOUT_SECONDS", "10")
     completed = subprocess.run(
         [sys.executable, str(wrapper)],
         input=payload.model_dump_json(),
@@ -249,8 +284,12 @@ def summarize_call(call: dict[str, Any]) -> str:
     parsed = call["parsed"]
     if parsed is None:
         return "No structured JSON returned."
-    if "text" in parsed:
-        return f"{parsed['kind']}: {parsed['text']}"
+    if "hints" in parsed:
+        hints = parsed.get("hints") or []
+        if hints:
+            highlight = hints[min(1, len(hints) - 1)]
+            return f"{highlight['kind']}: {highlight['text']}"
+        return "Hint response contained no hints."
     return f"{parsed['result']}: {parsed['reason']}"
 
 

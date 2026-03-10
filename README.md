@@ -75,16 +75,18 @@ See [visualizer/README.md](visualizer/README.md) for the full component map and 
 
 ## Try It: Autonomous Agent
 
-The solver can also run autonomously, driven by an LLM that reads the `SKILL.md` instruction document:
+The solver can also run autonomously in any agent harness that can read `SKILL.md`, invoke local tools, and maintain a puzzle workspace:
 
-**Option 1: `.skill` package** — Load `cryptic-solver.skill` into a compatible agent runtime's Skill Manager.
+**Option 1: `.skill` package** � Load `cryptic-solver.skill` into a compatible `SKILL.md`-aware runtime.
 
 **Option 2: Clone and mount**
 ```bash
 git clone https://github.com/nikcholer/cryptic-solver.git
 pip install -r requirements.txt
 ```
-Point your agent runtime's skill search path at this repository. The agent will read `SKILL.md` and invoke the CLI solvers autonomously.
+Point your harness's skill search path at this repository. The agent will read `SKILL.md` and invoke the CLI solvers autonomously.
+
+Codex is the reference harness currently documented in this repo, but the workflow is intentionally framed around `SKILL.md` compatibility rather than any single provider-specific runtime.
 
 ### Capability-based model allocation
 
@@ -179,3 +181,5 @@ cryptic-solver/
 - [docs/architecture.md](docs/architecture.md) — full technical reference: pipeline stages, solver inventory, grid orchestration, runtime abstraction
 - [docs/interactive-tutor-backend.md](docs/interactive-tutor-backend.md) — original design specification for the tutor backend (implemented)
 - [docs/agent-instructions-improvement-plan.md](docs/agent-instructions-improvement-plan.md) — roadmap for reliability, safety, and determinism improvements to `SKILL.md`
+
+

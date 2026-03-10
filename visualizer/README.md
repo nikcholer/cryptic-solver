@@ -59,3 +59,7 @@ src/
   components/            — React components listed above
   App.tsx                — root component, wires useTutorSession to the UI
 ```
+
+
+Current limitation: the bundled PDF import path is tuned for Telegraph-style born-digital PDFs. Other layouts may need custom extraction logic or a pre-generated clues.yaml and grid_state.json.
+

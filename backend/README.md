@@ -61,9 +61,13 @@ Example `next_hint` response:
 ```json
 {
   "clueId": "4D",
-  "hintLevel": 2,
-  "kind": "structure",
-  "text": "The definition is probably at the start.",
+  "hints": [
+    {"level": 1, "kind": "clue_type", "text": "This looks like an anagram clue."},
+    {"level": 2, "kind": "structure", "text": "The definition is probably at the start."},
+    {"level": 3, "kind": "wordplay_focus", "text": "Try rearranging the fodder near 'wobbly'."},
+    {"level": 4, "kind": "candidate_space", "text": "Use the checkers to narrow the anagram candidates."},
+    {"level": 5, "kind": "answer_reveal", "text": "The strongest answer here is ESTABLISH."}
+  ],
   "confidence": 0.71
 }
 ```
@@ -87,9 +91,9 @@ If you want a separate command just for final semantic adjudication, you can sti
 
 This keeps provider routing outside the backend. A deployment can point either command at any local alias, wrapper, or agent runtime it wants.
 
-## Codex Wrapper Model Selection
+## Reference Wrapper Model Selection
 
-If `CROSSWORD_RUNTIME_COMMAND` points at `backend/runtime_wrappers/codex_runtime.py`, you can choose the Codex model explicitly with environment variables.
+If `CROSSWORD_RUNTIME_COMMAND` points at `backend/runtime_wrappers/codex_runtime.py`, you can use the current reference wrapper for any `SKILL.md`-compatible harness that exposes a Codex-style CLI entry point.
 
 Supported model variables:
 - `CODEX_MODEL`
@@ -110,6 +114,8 @@ Resolution order is:
 Reasoning effort is resolved the same way and passed through to Codex as `model_reasoning_effort`.
 
 This keeps capability mapping in deployment config rather than inferring roles from model names.
+
+The wrapper in this repository is a reference implementation for the current Codex CLI flow, not a requirement of the overall architecture. The broader contract is the JSON request/response boundary plus a SKILL.md-compatible harness.
 ## Edge-Case Harness
 
 `backend/tools/evaluate_edge_cases.py` runs a small clue suite through:
@@ -121,4 +127,6 @@ It defaults to the built-in edge-case set from the sample puzzle and prints Mark
 - use `--format json` for machine-readable output
 - use `--include-codex-53` to add `gpt-5.3-codex`
 - use `--cases-file backend/edge_cases.example.json` to run a custom suite
+
+
 

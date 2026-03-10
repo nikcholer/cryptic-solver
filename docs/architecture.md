@@ -124,7 +124,7 @@ The same solver layer powers two different interfaces:
                           └─────────────────────────────────
 ```
 
-**Agent mode:** An LLM (e.g. Claude, GPT) reads `SKILL.md`, which describes the solving protocol, and autonomously drives the CLI tools. It manages its own `grid_state.json` and loops until the puzzle is solved or it stalls.
+**Agent mode:** Any `SKILL.md`-compatible harness can read `SKILL.md`, drive the CLI tools, manage `grid_state.json`, and loop until the puzzle is solved or it stalls. A specific model or provider is not part of the core contract.
 
 **Tutor mode:** A human interacts through the React frontend. The FastAPI backend provides session management, hint generation, and validation. The `HeuristicRuntimeAdapter` performs clue-type detection and calls the same CLI solvers. An optional external LLM (`CROSSWORD_RUNTIME_COMMAND`) handles semantic judgement and richer hints.
 
@@ -140,7 +140,7 @@ HTTP routes and request validation. Key endpoints:
 - `POST /api/sessions/{id}/entries` — submit an answer
 - `POST /api/sessions/{id}/clues/{id}/next-hint` — request next hint
 - `POST /api/sessions/{id}/clues/{id}/check` — validate without committing
-- `POST /api/sessions/{id}/upload-pdf` — import a puzzle from PDF
+- `POST /api/imports/pdf` — import a puzzle from PDF
 
 ### Session Service (`services/session_service.py`)
 
@@ -219,6 +219,8 @@ The indirection is intentional:
 
 1. `SKILL.md` asks for a capability (e.g. `reasoner`).
 2. Deployment maps that to a local alias (e.g. `crossword-reasoner`).
-3. The runtime wrapper resolves the alias to the real model, credentials, and endpoint.
+3. A harness-specific runtime wrapper resolves the alias to the real model, credentials, and endpoint.
 
-This lets the solver stay portable while different environments handle their own routing, secrets, and vendor integrations. An example deployment config lives at `config/model-routing.example.yaml`.
+This lets the solver stay portable while different environments handle their own routing, secrets, and vendor integrations. Codex is the reference harness currently documented here, but the architectural boundary is `SKILL.md` plus the structured runtime JSON contract. An example deployment config lives at `config/model-routing.example.yaml`.
+
+

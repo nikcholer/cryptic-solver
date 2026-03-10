@@ -12,18 +12,43 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up Python 3.11
       uses: actions/setup-python@v5
       with:
         python-version: "3.11"
         cache: 'pip'
-        
-    - name: Install dependencies
+
+    - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        
+
     - name: Run backend tests
       run: |
         python -m unittest backend.tests.test_api
+
+    - name: Run edge-case harness
+      run: |
+        python backend/tools/evaluate_edge_cases.py --format json
+
+  build-visualizer:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Node 20
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+        cache: 'npm'
+        cache-dependency-path: visualizer/package-lock.json
+
+    - name: Install visualizer dependencies
+      working-directory: visualizer
+      run: npm ci
+
+    - name: Build visualizer
+      working-directory: visualizer
+      run: npm run build
