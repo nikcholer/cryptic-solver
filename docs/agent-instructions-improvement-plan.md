@@ -1,3 +1,5 @@
+*Status: Roadmap (in progress). Tracks planned improvements to `SKILL.md` for reliability, safety, and determinism. Unchecked items are planned.*
+
 # Agent Instruction Quality Improvement Plan
 
 ## Purpose

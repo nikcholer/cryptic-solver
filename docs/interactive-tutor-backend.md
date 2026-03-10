@@ -1,3 +1,5 @@
+*Status: Implemented. This is the original design specification for the tutor backend. The implementation lives in `backend/app/`. Some planned items (SQLite phase-2) are not yet built.*
+
 # Interactive Tutor Backend Design
 
 ## Goal

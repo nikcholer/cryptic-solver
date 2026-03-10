@@ -1,148 +1,173 @@
 # Cryptic Crossword Solver: A Neuro-Symbolic Approach
 
-The objective of this project is to create an automated solver for cryptic crosswords. 
+A hybrid AI system that combines LLM reasoning with algorithmic solvers to crack cryptic crosswords — plus an interactive tutor UI for learning how cryptic clues work.
 
-While it is, of course, of no practical value to solve cryptic crosswords algorithmically, it serves as a highly valuable demonstration of a **Neuro-Symbolic** approach to AI: combining the semantic understanding of Large Language Models (LLMs) with the deterministic, combinatorial power of algorithmic search.
+## What Are Cryptic Crosswords?
 
-Neither an LLM nor a pure algorithmic solver can handle cryptic crosswords effectively on their own, but together they cover each other's weaknesses perfectly. For example, an anagram clue typically has indicator words ("mixed", "confused", "scrambled") that identify it as an anagram. Validating that possible solutions are anagrams of the given letters is nearly impossible for a language model due to tokenization constraints. However, it is mathematically straightforward with an algorithmic approach using wordlists and pre-calculated anagrams.
+Cryptic crosswords are puzzles where each clue is a miniature word puzzle with two paths to the answer:
 
-## Quick Start: Using the Solver
+- **The definition** — a synonym or description of the answer, always at the start or end of the clue.
+- **The wordplay** — instructions for constructing the answer letter-by-letter through mechanisms like anagrams, hidden words, reversals, or charades.
+- **The surface reading** — the clue is written to read as a plausible (if odd) English sentence, which is deliberate misdirection.
 
-To solve a crossword using this Agent Skill:
-1. **Initialize a Workspace**: Create a new, blank folder for your puzzle (e.g., `mkdir puzzle_83479`). This acts as an isolated sandbox for the agent to track its state.
-2. **Provide the Input**: Place your crossword image or PDF inside this new workspace folder.
-3. **Mount the Agent**: Point your OpenClaw or another compatible agent runtime at this project directory so it loads the Cryptic Solver `SKILL.md`.
-4. **Invoke**: Tell the agent to target your workspace. Example prompt:
-   > *"Using your Cryptic Crossword Solver skill, solve the puzzle found in `./puzzle_83479/crossword.pdf`. Save all your state files to that directory."*
+**Example:** *"The role is complicated for those with paying guests (9)"*
 
-## Installation & Deployment
+- **Definition:** "those with paying guests" → HOTELIERS
+- **Wordplay:** "The role is" = THEROLEIS, "complicated" = anagram indicator → rearrange THEROLEIS → HOTELIERS
+- **Surface reading:** reads as though someone's role is complicated — pure misdirection.
 
-This project is packaged as an **Agentic Skill Bundle**. 
+## The Neuro-Symbolic Thesis
 
-### Option 1: The `.skill` Package (Recommended)
-Many OpenClaw/Agentic runtimes support the `.skill` archive format (a zipped bundle containing the identity and tools).
-1. Download `cryptic-solver.skill` from the repository releases (or build it locally by zipping the repository contents and renaming to `.skill`).
-2. Load the `.skill` file directly into your agent runtime's Skill Manager.
+Neither an LLM nor a pure algorithmic solver can handle cryptic crosswords effectively alone:
 
-### Option 2: Clone & Mount
-1. **Clone the full repository** (not just the `SKILL.md`):
-   ```bash
-   git clone https://github.com/nikcholer/cryptic-solver.git
-   ```
-2. **Install local dependencies** to ensure the Python solvers have the necessary libraries:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. **Mount the Directory**: In your agent configuration, point the skill search path to the root of this repository. The `SKILL.md` file will serve as the instruction set, and the agent will invoke the scripts in `cryptic_skills/` via relative paths.
+- **LLMs** understand language — they can recognise that "complicated" signals an anagram, that "those with paying guests" defines HOTELIERS, and parse the misdirecting surface reading. But tokenisation makes them fundamentally unreliable at letter-level mechanics: they cannot reliably confirm that THEROLEIS rearranges into HOTELIERS, or count that a hidden word spans exactly 7 characters.
 
-## Capability-Based Model Allocation
+- **Algorithms** handle mechanics perfectly — anagram enumeration, pattern matching, dictionary validation — but they have no world knowledge. They cannot decide which part of a clue is the definition, which word is the indicator, or whether a candidate actually means what the clue asks.
 
-When this project delegates work across models, it should do so by capability role rather than provider name:
+Together they cover each other's weaknesses. The LLM handles *interpretation* (parsing, indicator recognition, definition matching). The algorithms handle *execution* (candidate generation under mechanical constraints). A final LLM evaluation step confirms that algorithmic candidates fit the definition.
 
-- **lite**: cheap, fast shortlist generation and broad candidate recall
-- **reasoner**: ambiguity resolution, parse comparison, semantic ranking, and explanation
-- **vision**: puzzle image reading, OCR, and grid-layout extraction
+## Worked Example
 
-This keeps the workflow portable across runtimes. The runtime can map its available models onto these roles based on cost, latency, and quality.
+### Anagram: "The role is complicated for those with paying guests (9)"
 
-### Deployment Mapping
+**Step 1 — Indicator detection:** "complicated" is recognised as an anagram indicator.
 
-The skill should stop at capability roles. Deployment is responsible for a second mapping layer:
+**Step 2 — Fodder extraction:** The wordplay side is "The role is" = THEROLEIS (9 letters, matching the enumeration).
 
-1. `SKILL.md` asks for a capability such as `lite`, `reasoner`, or `vision`.
-2. Deployment maps that capability to a local alias such as `crossword-lite`.
-3. The calling agent resolves that alias to the real model identifier, credentials, endpoint, and any provider-specific options.
+**Step 3 — Algorithmic solver:**
+```bash
+python cryptic_skills/anagram.py --fodder THEROLEIS --pattern .........
+# → {"candidates": ["hoteliers"]}
+```
 
-This indirection is intentional. It means the skill can stay portable while different environments handle their own routing, secrets, and vendor integrations.
+**Step 4 — Semantic confirmation:** The LLM verifies that "those with paying guests" = HOTELIERS. Confidence: 0.93.
 
-An example deployment config lives at `config/model-routing.example.yaml`.
+**Step 5 — Grid commit:** HOTELIERS is placed in the grid. Checking letters propagate to crossing clues, constraining their search space.
 
-## The "Two-Engine" Architecture
+### Initials: "wine honey enough now — for starters (4)"
 
-This solver is architected as a pipeline with feedback loops, separating the semantic tasks from the raw computational tasks:
+**Step 1 — Indicator detection:** "for starters" signals an initial-letters clue.
 
-1. **The Parsing Model (the "Foreman")**:
-   - **Input**: The clue, enumeration (e.g., `(5,4)`), and any known checked letters.
-   - **Task**: Disambiguate the natural language to split the clue into its *Definition* and *Wordplay* components limit. Identify clue indicators (anagram indicators, hidden word indicators, etc.).
-   - **Output**: Structured data (e.g., an Abstract Syntax Tree of operations) proposing likely parses to the algorithmic engine.
+**Step 2 — Letter extraction:** Take the first letter of each word: **W**ine **H**oney **E**nough **N**ow → WHEN.
 
-2. **The Algorithmic Solvers (The "Workers")**:
-   - **Modules**: Pure programmatic algorithms such as `AnagramSolver`, `HiddenWordSolver`, `PatternMatcher`, or a `HomophoneEngine`.
-   - **Task**: Take the structured instructions from the Parser, run heavily optimized searches against local dictionaries, and generate a list of candidate words that satisfy the mechanical constraints (length, checked letters, anagram fodder, etc.).
+**Step 3 — Validation:** WHEN is in the dictionary and matches the pattern. Confidence: 0.93.
 
-3. **The Evaluating Model (the "Judge")**:
-   - **Input**: The original definition part of the clue and the list of candidates generated by the algorithms.
-   - **Task**: Rank the candidates based on semantic similarity to the definition, preventing combinatorial explosions (like checking all charade combinations) from overwhelming the final output.
+No external solver call is needed — the `HeuristicAdapter` extracts initials directly and validates against the wordlist.
 
-## Full Grid Orchestration: Solving the Puzzle
+## Try It: Interactive Tutor
 
-A complete puzzle is more than the sum of its independent clues due to the intersecting checking letters. Solving one clue drastically reduces the search space for intersecting clues. The solver orchestrates the full grid solve by treating it as a dynamic Constraint Satisfaction Problem (CSP).
+The tutor UI lets you solve cryptic crosswords with guided hints and real-time validation.
 
-### 1. Grading and The Initial Pass
-Before brute-forcing everything, the system parses all clues and grades them by algorithmic certainty.
-- **Highest Priority**: Hidden words, anagrams, and acrostics. Once a parsing model identifies the operational mechanism and fodder, the algorithmic solver generates a highly constrained, reliable candidate list. 
-The solver tackles our toolkit's strongest clue types first to lock in high-confidence answers.
+```bash
+# Start the backend
+pip install -r requirements.txt
+uvicorn app.main:app --app-dir backend --reload
 
-### 2. Constraining the Search Space
-Every word placed in the grid generates **checked letters** for intersecting clues. This is where the algorithmic engine shines. A purely semantic clue (like a Double Definition) might initially have a search space of 40,000 words. But as intersecting letters are found (e.g., narrowed to `C.M.....`), the search space shrinks to a few dozen candidates. The LLM Evaluator only needs to rank those few remaining valid words.
+# In a separate terminal, start the frontend
+cd visualizer
+npm install
+npm run dev
+```
 
-### 3. Execution Pass and Termination (Graceful Yielding)
-The solve process operates as a loop across all clues. The Agent should not get stuck attempting to brute-force a single clue:
-1. **Sweep & Solve**: Scans all unresolved clues. Queries `grid_manager.py` for each clue's current checking-letter constraints (e.g., `S...S`).
-2. **Algorithmic Execution**: The managing model routes the categorized parts to the `cryptic_skills/` CLI Python scripts for deterministic candidate generation.
-3. **Commit**: If the Agent is highly confident in an algorithmic candidate, it commits it to the Grid State, unlocking new intersecting checking letters for the next sweep.
-4. **Termination Condition**: To prevent infinite hallucination loops, if the Agent completes a full sweep of the remaining clues without adding any *new* answers to the grid, it abandons the loop. It immediately yields control back to the human, outputting the partial grid and asking for hints or guidance. This allows the Agent to handle novel or complex general knowledge clues without bricking the session.
+Open `http://localhost:5173`. Select a clue, type your answer, and submit. Request hints (5 progressive levels from clue-type identification to full reveal), check answers against the solver engine, and watch crossing letters propagate through the grid.
 
----
+See [visualizer/README.md](visualizer/README.md) for the full component map and source layout.
 
-## Clue Types and Engine Suitability
+## Try It: Autonomous Agent
 
-Here is a breakdown of how the Neuro-Symbolic division of labor applies to common cryptic clue types:
+The solver can also run autonomously, driven by an LLM that reads the `SKILL.md` instruction document:
 
-### 1. Anagram Clues
-**Highly Algorithmic-Friendly**
-- **Parsing model**: Detects the anagram indicator, identifies the exact fodder span, and confirms the definition half.
-- **Multimodal Grid Mapping**: Native Agent runtimes can use Vision capabilities to "look" at an image of a crossword and mathematically map the 15x15 `x, y` geometric layout of the interlocking clues into `grid_state.json`.
-- **Algorithm**: Generates anagrams, filters by enumeration/checked letters, and validates against a dictionary.
-- *Pattern: Parser → Anagram Generator → Ranker*
+**Option 1: `.skill` package** — Load `cryptic-solver.skill` into a compatible agent runtime's Skill Manager.
 
-### 2. Double-Definition Clues
-**Highly LLM-Friendly**
-- **Algorithm**: Enumerates candidate answers matching the word length and known checking letters.
-- **Reasoner**: Deep semantic matching. Scores each candidate generated by the algorithm to see if it fits both definition-like phrases.
+**Option 2: Clone and mount**
+```bash
+git clone https://github.com/nikcholer/cryptic-solver.git
+pip install -r requirements.txt
+```
+Point your agent runtime's skill search path at this repository. The agent will read `SKILL.md` and invoke the CLI solvers autonomously.
 
-### 3. Hidden Clues
-**Very Algorithmic-Friendly**
-- **Parsing model**: Spots the oblique hidden-indicator and verifies the definition matching at the end.
-- **Algorithm**: Slides a window across the clue text, finding contiguous substrings of the right length that match checked letters. 
+### Capability-based model allocation
 
-### 4. Charades (Bits and Pieces)
-**Hybrid (Algorithmic Generation, LLM Control)**
-- **Parsing model**: Proposes parses (which word is the definition, which components are abbreviations vs synonyms).
-- **Algorithm**: Uses tables of abbreviations and crosswordese to build candidates by concatenation.
-- *Risk*: Combinatorial explosion. The managing model must prune bad components early, and the algorithmic engine requires optimized data structures (like Tries) to abandon dead-end combinations.
+The agent protocol uses capability roles rather than provider names:
 
-### 5. Start, Middle, and End (Acrostics)
-**Mostly Algorithmic**
-- **Parsing model**: Detects the operation ("initially", "heart of") and the target span.
-- **Algorithm**: Mechanical transforms (first letters, odd letters, etc.). Generation is trivial once parsed.
+| Role | Purpose |
+|------|---------|
+| `lite` | Fast, cheap candidate generation and broad recall |
+| `reasoner` | Ambiguity resolution, semantic ranking, explanation |
+| `vision` | Puzzle image reading, OCR, grid-layout extraction |
 
-### 6. Container and Contents
-**Hybrid**
-- **Parsing model**: Works out which chunk goes inside which, and identifies deletions or abbreviations before insertion.
-- **Algorithm**: Executes the mechanical insertion transform and validates dictionary candidates.
+The runtime maps these roles to actual models, credentials, and endpoints. See `config/model-routing.example.yaml`.
 
-### 7. Cryptic Definitions and All-in-Ones
-**Heavily model-dependent**
-- Requires world knowledge, phrase recognition, and ignoring surface misdirection.
-- **Algorithm**: Mostly assists via pattern filtering, checking n-gram frequency, and verifying checking letters to limit the LLM's guess-space.
+## Architecture Overview
 
-### 8. Homophones and Spoonerisms
-**Hybrid (Phonetic Algorithmic)**
-- **Reasoner**: Judges plausibility, selects intended synonyms, and accounts for accent-dependent loose matches ("we hear").
-- **Algorithm**: Mandatory use of a phonetic engine (e.g., CMUdict, Double Metaphone) to map candidate words to phonetic codes and generate valid "sounds-like" candidates.
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Human or LLM                         │
+│              (tutor UI  /  agent runtime)               │
+└────────────────────────┬────────────────────────────────┘
+                         │
+          ┌──────────────▼──────────────┐
+          │     FastAPI Backend          │
+          │  (sessions, grid engine,     │
+          │   heuristic adapter)         │
+          └──────────────┬──────────────┘
+                         │
+          ┌──────────────▼──────────────┐
+          │   cryptic_skills/*.py        │
+          │  (anagram, hidden, reversal, │
+          │   insertion, charade,        │
+          │   grid_manager)              │
+          └──────────────┬──────────────┘
+                         │
+          ┌──────────────▼──────────────┐
+          │   Data files                 │
+          │  (words.txt, abbreviations,  │
+          │   indicators, thesaurus)     │
+          └─────────────────────────────┘
+```
 
-### 9. Reversals, Deletions, and Substitutions
-**Algorithmic Transforms**
-- **Parsing model**: Detects which complex operation applies (e.g., "endless" = delete last letter).
-- **Algorithm**: Executes the mechanistic string manipulation and filters against valid vocabulary.
+The backend detects clue types via indicator word matching, extracts fodder, calls the appropriate CLI solver, and validates candidates against the dictionary. An optional external LLM (configured via `CROSSWORD_RUNTIME_COMMAND`) provides semantic judgement and richer hints.
+
+Full grid solving treats the puzzle as a Constraint Satisfaction Problem: high-confidence clue types (hidden words, anagrams) are solved first, their crossing letters constrain neighbouring clues, and the solver sweeps until no more progress can be made.
+
+See [docs/architecture.md](docs/architecture.md) for the full technical reference.
+
+## Clue Types
+
+| Clue Type | Algorithmic Role | LLM Role | Solver Script |
+|-----------|-----------------|----------|---------------|
+| Anagram | Generate all dictionary anagrams of fodder | Detect indicator, extract fodder, confirm definition | `anagram.py` |
+| Hidden word | Slide window across fodder text | Spot hidden-word indicator, identify fodder span | `hidden.py` |
+| Reversal | Reverse fodder, validate against dictionary | Detect reversal indicator, identify fodder | `reversal.py` |
+| Container | Insert inner element into outer, validate | Identify which element goes inside which | `insertion.py` |
+| Charade | Concatenate abbreviations/synonyms, validate | Parse which components combine, identify abbreviations | `charade.py` |
+| Initials/Acrostics | Extract first letters mechanically | Detect "initially"/"for starters" indicators | Built-in |
+| Double definition | Pattern-filter dictionary candidates | Deep semantic matching against both definitions | Pattern only |
+| Cryptic definition | Pattern filtering, n-gram frequency | World knowledge, phrase recognition | Pattern only |
+| Homophone | Phonetic engine mapping (CMUdict) | Judge plausibility, select intended synonyms | Planned |
+
+## Project Structure
+
+```
+cryptic-solver/
+  SKILL.md                  — agent instruction document (machine-facing)
+  cryptic_skills/           — CLI solver scripts and data files
+  backend/                  — FastAPI application (API, services, runtime adapter)
+  visualizer/               — React + TypeScript tutor UI
+  samples/                  — sample puzzle definitions
+  backend_data/             — live session state (runtime)
+  config/                   — example deployment configs
+  docs/                     — architecture and design documents
+```
+
+## Development
+
+- [backend/README.md](backend/README.md) — running the backend, smoke tests, edge-case harness, runtime configuration
+- [visualizer/README.md](visualizer/README.md) — tutor UI setup, component map, source layout
+- [CONTRIBUTING.md](CONTRIBUTING.md) — dev onboarding, adding new solvers, code conventions
+
+## Design Documents
+
+- [docs/architecture.md](docs/architecture.md) — full technical reference: pipeline stages, solver inventory, grid orchestration, runtime abstraction
+- [docs/interactive-tutor-backend.md](docs/interactive-tutor-backend.md) — original design specification for the tutor backend (implemented)
+- [docs/agent-instructions-improvement-plan.md](docs/agent-instructions-improvement-plan.md) — roadmap for reliability, safety, and determinism improvements to `SKILL.md`

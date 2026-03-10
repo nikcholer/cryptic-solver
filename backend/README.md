@@ -1,3 +1,5 @@
+This is the development guide for the FastAPI backend. See the [project README](../README.md) for an overview.
+
 # Backend
 
 Run locally with:
