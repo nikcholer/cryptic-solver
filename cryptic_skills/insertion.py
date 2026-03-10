@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+from typing import Any, Dict, List, Optional, Set
 
 # ----------------------------------------------------------------------
 # Core Foreman Skill: Insertion (Container) Solver
@@ -17,7 +18,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 WORDLIST_PATH = os.path.join(SCRIPT_DIR, "words.txt")
 ABBREV_PATH = os.path.join(SCRIPT_DIR, "abbreviations.json")
 
-def load_wordlist(filepath):
+def load_wordlist(filepath: str) -> Set[str]:
     """Loads the valid wordlist into a fast lookup set."""
     valid_words = set()
     try:
@@ -31,7 +32,7 @@ def load_wordlist(filepath):
         print(json.dumps({"error": f"Wordlist not found at {filepath}"}))
         exit(1)
 
-def load_abbreviations(filepath):
+def load_abbreviations(filepath: str) -> Dict[str, List[str]]:
     """Loads abbreviations/synonyms from abbreviations.json.
 
     Returns a mapping of clue-synonym/keyword -> list of abbreviation expansions.
@@ -60,7 +61,7 @@ def load_abbreviations(filepath):
         print(json.dumps({"error": f"Error loading abbreviations: {e}"}))
         return {}
 
-def filter_by_pattern(word, pattern):
+def filter_by_pattern(word: str, pattern: Optional[str]) -> bool:
     """Checks if a single word matches the known checked letters."""
     if not pattern:
         return True
@@ -74,10 +75,10 @@ def filter_by_pattern(word, pattern):
             
     return True
 
-def clean_string(s):
+def clean_string(s: str) -> str:
     return "".join(c.lower() for c in s if c.isalpha())
 
-def solve_insertion(fodder, outer, pattern=None, wordlist_path=WORDLIST_PATH, abbrev_path=ABBREV_PATH):
+def solve_insertion(fodder: str, outer: str, pattern: Optional[str] = None, wordlist_path: str = WORDLIST_PATH, abbrev_path: str = ABBREV_PATH) -> Dict[str, Any]:
     """
     Generates all valid English words created by inserting `fodder` into `outer`.
     If `outer` is a known abbreviation keyword, it tries inserting into all of its abbreviations.

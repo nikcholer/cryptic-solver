@@ -3,16 +3,17 @@ import json
 import collections
 
 import os
+from typing import Any, Dict, List, Optional
 
 # Path to our local knowledge base
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 WORDLIST_PATH = os.path.join(SCRIPT_DIR, "words.txt")
 
-def build_anagram_signature(word):
+def build_anagram_signature(word: str) -> str:
     """Creates a sorted string of letters to act as an anagram hash."""
     return "".join(sorted(word.lower()))
 
-def load_wordlist(filepath):
+def load_wordlist(filepath: str) -> Dict[str, List[str]]:
     """Loads the wordlist into a hash map where keys are anagram signatures."""
     anagram_dict = collections.defaultdict(list)
     try:
@@ -28,7 +29,7 @@ def load_wordlist(filepath):
         print(json.dumps({"error": f"Wordlist not found at {filepath}"}))
         exit(1)
 
-def filter_by_pattern(words, pattern):
+def filter_by_pattern(words: List[str], pattern: Optional[str]) -> List[str]:
     """Filters a list of words by a given pattern (e.g. 'P...S....')."""
     if not pattern:
         return words
@@ -50,7 +51,7 @@ def filter_by_pattern(words, pattern):
             
     return filtered
 
-def solve_anagram(fodder, pattern=None, wordlist_path=WORDLIST_PATH):
+def solve_anagram(fodder: str, pattern: Optional[str] = None, wordlist_path: str = WORDLIST_PATH) -> Dict[str, Any]:
     """Core skill logic: Finds anagrams of 'fodder' matching 'pattern'."""
     # Clean the fodder (remove spaces, punctuation)
     clean_fodder = "".join(c.lower() for c in fodder if c.isalpha())

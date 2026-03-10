@@ -2,6 +2,7 @@ import argparse
 import json
 import os
 import itertools
+from typing import Any, Dict, List, Optional, Set
 
 # ----------------------------------------------------------------------
 # Core Foreman Skill: Charades / Concatenation Solver
@@ -17,7 +18,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 WORDLIST_PATH = os.path.join(SCRIPT_DIR, "words.txt")
 ABBREV_PATH = os.path.join(SCRIPT_DIR, "abbreviations.json")
 
-def load_wordlist(filepath):
+def load_wordlist(filepath: str) -> Set[str]:
     """Loads the valid wordlist into a fast lookup set."""
     valid_words = set()
     try:
@@ -31,7 +32,7 @@ def load_wordlist(filepath):
         print(json.dumps({"error": f"Wordlist not found at {filepath}"}))
         exit(1)
 
-def load_abbreviations(filepath):
+def load_abbreviations(filepath: str) -> Dict[str, Any]:
     """Loads the common abbreviation lists from our Knowledge Base."""
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
@@ -39,7 +40,7 @@ def load_abbreviations(filepath):
     except FileNotFoundError:
         return {}
         
-def load_crosswordese(filepath):
+def load_crosswordese(filepath: str) -> None:
     """
     Loads common crossword single-letter indicators.
     These are the non-standard abbreviations that purely exist in cryptics.
@@ -47,7 +48,7 @@ def load_crosswordese(filepath):
     # This acts as a fallback or extension. For now we use the main DB.
     pass
 
-def filter_by_pattern(word, pattern):
+def filter_by_pattern(word: str, pattern: Optional[str]) -> bool:
     """Checks if a single word matches the known checked letters."""
     if not pattern:
         return True
@@ -61,10 +62,10 @@ def filter_by_pattern(word, pattern):
             
     return True
 
-def clean_string(s):
+def clean_string(s: str) -> str:
     return "".join(c.lower() for c in s if c.isalpha())
 
-def get_candidates_for_component(comp, abbrev_db):
+def get_candidates_for_component(comp: str, abbrev_db: Dict[str, Any]) -> List[str]:
     """
     Given a single charade component (e.g. "doctor"), return a list of all 
     possible strings it could represent (e.g. ["dr", "mo", "mb", "doctor"]).
@@ -83,7 +84,7 @@ def get_candidates_for_component(comp, abbrev_db):
     # Remove duplicates and empty strings
     return list(set([c for c in candidates if c]))
 
-def solve_charade(components, pattern=None, wordlist_path=WORDLIST_PATH, abbrev_path=ABBREV_PATH):
+def solve_charade(components: List[str], pattern: Optional[str] = None, wordlist_path: str = WORDLIST_PATH, abbrev_path: str = ABBREV_PATH) -> Dict[str, Any]:
     """
     Core skill logic: Takes a list of ordered components, generates all combinations
     of their abbreviations/synonyms, concatenates them, and filters by dictionary.

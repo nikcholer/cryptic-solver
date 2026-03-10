@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+from typing import Any, Dict, List, Optional, Set
 
 # ----------------------------------------------------------------------
 # Core Foreman Skill: Hidden Word Solver
@@ -16,7 +17,7 @@ import os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 WORDLIST_PATH = os.path.join(SCRIPT_DIR, "words.txt")
 
-def load_wordlist(filepath):
+def load_wordlist(filepath: str) -> Set[str]:
     """Loads the valid wordlist into a fast lookup set."""
     valid_words = set()
     try:
@@ -30,7 +31,7 @@ def load_wordlist(filepath):
         print(json.dumps({"error": f"Wordlist not found at {filepath}"}))
         exit(1)
 
-def filter_by_pattern(word, pattern):
+def filter_by_pattern(word: str, pattern: Optional[str]) -> bool:
     """Checks if a single word matches the known checked letters."""
     if not pattern:
         return True
@@ -44,7 +45,7 @@ def filter_by_pattern(word, pattern):
             
     return True
 
-def solve_hidden(fodder, length, pattern=None, wordlist_path=WORDLIST_PATH):
+def solve_hidden(fodder: str, length: int, pattern: Optional[str] = None, wordlist_path: str = WORDLIST_PATH) -> Dict[str, Any]:
     """
     Core skill logic: Slides a window of size `length` across the `fodder`
     to find valid hidden words.
