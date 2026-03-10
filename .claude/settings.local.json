@@ -5,7 +5,9 @@
       "Bash(npm uninstall:*)",
       "Bash(npx tsc:*)",
       "Bash(npx vite build:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(ls:*)",
+      "Bash(git check-ignore:*)"
     ]
   }
 }

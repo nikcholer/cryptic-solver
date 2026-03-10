@@ -25,6 +25,14 @@ npm run dev
 
 The dev server starts at `http://localhost:5173` by default and proxies API requests to the backend at `http://localhost:8000`.
 
+### Environment Variables
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `VITE_PUZZLE_ID` | Puzzle loaded on first visit (must match a puzzle ID known to the backend) | `cryptic-2026-03-03` |
+
+Set Vite env vars in a `.env.local` file or inline: `VITE_PUZZLE_ID=prize-cryptic-85080 npm run dev`.
+
 ## Components
 
 | Component | File | Purpose |

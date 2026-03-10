@@ -20,6 +20,22 @@ Run the edge-case evaluation harness with:
 python backend/tools/evaluate_edge_cases.py
 ```
 
+## Environment Variables
+
+All environment variables are optional. The backend runs fully locally with no configuration.
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `CROSSWORD_RUNTIME_MODE` | Runtime adapter selection: `heuristic` (full local analysis + optional external LLM) or `stub` (length/pattern checks only, useful for UI development without solvers) | `heuristic` |
+| `CROSSWORD_RUNTIME_COMMAND` | Shell command for external LLM integration — receives JSON on stdin, writes JSON on stdout | empty (disabled) |
+| `CROSSWORD_SEMANTIC_COMMAND` | Override just the semantic adjudication path, keeping other operations on the main runtime command | empty (disabled) |
+| `CODEX_MODEL` | Default model when using the Codex wrapper | empty |
+| `CODEX_MODEL_LITE` / `_REASONER` / `_VISION` | Capability-specific model overrides | falls back to `CODEX_MODEL` |
+| `CODEX_REASONING_EFFORT` | Default reasoning effort level | empty |
+| `CODEX_REASONING_EFFORT_LITE` / `_REASONER` / `_VISION` | Capability-specific effort overrides | falls back to `CODEX_REASONING_EFFORT` |
+| `CODEX_RUNTIME_EXECUTABLE` | Path to the codex CLI binary | auto-detected via `shutil.which('codex')` |
+| `CODEX_RUNTIME_TIMEOUT_SECONDS` | Subprocess timeout for codex calls | `90` |
+
 ## Optional Agent Runtime Hook
 
 The default backend runtime is local-first:
