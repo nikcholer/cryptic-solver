@@ -176,11 +176,18 @@ def invoke_codex(prompt: str, schema: dict[str, Any], capability: str | None) ->
         schema_path = Path(schema_file.name)
         json.dump(schema, schema_file)
 
+    with tempfile.NamedTemporaryFile('w', suffix='.txt', delete=False, encoding='utf-8') as prompt_file:
+        prompt_path = Path(prompt_file.name)
+        prompt_file.write(prompt)
+
     try:
+        # Read the prompt back as a single string to avoid Windows CLI
+        # argument truncation with multi-line strings.
+        prompt_text = prompt_path.read_text(encoding='utf-8')
         command = [
             *resolve_codex_command(),
             'exec',
-            prompt,
+            prompt_text,
             '--skip-git-repo-check',
             '--sandbox',
             'read-only',
