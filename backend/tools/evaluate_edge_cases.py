@@ -175,10 +175,12 @@ def build_profiles(include_codex_53: bool) -> list[dict[str, Any]]:
 
 def invoke_wrapper(wrapper: Path, payload: Any, env_patch: dict[str, str]) -> RuntimeCallResult:
     env = os.environ.copy()
-    env.setdefault(
-        "CODEX_RUNTIME_EXECUTABLE",
-        r"powershell -ExecutionPolicy Bypass -File C:\nvm4w\nodejs\codex.ps1",
-    )
+    if "CODEX_RUNTIME_EXECUTABLE" not in env:
+        raise RuntimeError(
+            "CODEX_RUNTIME_EXECUTABLE is not set. "
+            "Set it to the command that launches your codex runtime "
+            "(e.g. 'powershell -ExecutionPolicy Bypass -File /path/to/codex.ps1')."
+        )
     env.update(env_patch)
     completed = subprocess.run(
         [sys.executable, str(wrapper)],

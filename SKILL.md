@@ -1,7 +1,7 @@
 ---
 name: cryptic-crossword-solver
 description: A neuro-symbolic framework for solving cryptic crosswords by delegating deterministic wordplay to algorithmic Python tools.
-metadata: {"version": "2.5", "author": "Antigravity", "tags": ["games", "crosswords", "algorithmic"]}
+metadata: {"version": "2.5", "author": "Nik Choler", "tags": ["games", "crosswords", "algorithmic"]}
 ---
 
 # Cryptic Crossword Solver

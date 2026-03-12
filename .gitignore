@@ -19,5 +19,15 @@ Thumbs.db
 # Session data (runtime artefacts, not source)
 backend_data/sessions/
 
+# Node
+node_modules/
+
+# Copyrighted puzzle source files (do not redistribute)
+samples/**/*.pdf
+samples/**/*.png
+
+# Working/scratch clue files
+clues_*.md
+
 # Build artifacts
 *.skill

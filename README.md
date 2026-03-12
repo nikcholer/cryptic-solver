@@ -132,6 +132,10 @@ Full grid solving treats the puzzle as a Constraint Satisfaction Problem: high-c
 
 See [docs/architecture.md](docs/architecture.md) for the full technical reference.
 
+### Why This Pattern Matters Beyond Crosswords
+
+This project demonstrates a **neuro-symbolic orchestration pattern**: use LLMs for interpretation and judgement, delegate mechanical operations to deterministic tools, and close the loop with a semantic evaluation step. The same architecture applies wherever AI needs to work alongside rule-based systems — regulatory compliance, data transformation pipelines, scientific computation, or game engines.
+
 ## Clue Types
 
 | Clue Type | Algorithmic Role | LLM Role | Solver Script |
@@ -159,6 +163,10 @@ cryptic-solver/
   config/                   — example deployment configs
   docs/                     — architecture and design documents
 ```
+
+## Data Files
+
+`cryptic_skills/words.txt` is an English wordlist (~370 K entries) used for candidate validation. It is derived from public-domain word lists and is included for development convenience. If you redistribute this project, verify compatibility with your intended use.
 
 ## Development
 
