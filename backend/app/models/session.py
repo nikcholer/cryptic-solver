@@ -11,6 +11,7 @@ class HintRecord(BaseModel):
     level: int
     kind: HintKind
     text: str
+    source: str = "agent"
 
 
 class ValidationRecord(BaseModel):

@@ -7,6 +7,7 @@ import shlex
 import subprocess
 import sys
 from dataclasses import dataclass
+import logging
 from pathlib import Path
 from typing import Protocol
 
@@ -136,12 +137,15 @@ class CommandRuntimeGateway:
             check=False,
         )
         if completed.returncode != 0:
+            logging.error(f"Runtime command failed with exit code {completed.returncode}:\nSTDERR: {completed.stderr}\nSTDOUT: {completed.stdout}")
             return None
         try:
             decoded = json.loads(completed.stdout)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as exc:
+            logging.error(f"Failed to parse runtime output as JSON. Error: {exc}\nOutput starts with: {completed.stdout[:200]}")
             return None
         if not isinstance(decoded, dict):
+            logging.error(f"Runtime command returned JSON but not a dict: type {type(decoded)}")
             return None
         return decoded
 
@@ -246,7 +250,7 @@ class HeuristicRuntimeAdapter:
         hints = []
         for level in range(1, 6):
             kind, text = self._hint_for_level(clue, pattern, analysis, level)
-            hints.append({'level': level, 'kind': kind, 'text': text})
+            hints.append({'level': level, 'kind': kind, 'text': text, 'source': 'heuristic'})
         return {
             'clueId': clue.id,
             'hints': hints,
@@ -316,6 +320,7 @@ class HeuristicRuntimeAdapter:
                     'level': hint.level,
                     'kind': HintKind(hint.kind),
                     'text': hint.text,
+                    'source': 'agent',
                 }
                 for hint in parsed.hints
             ],

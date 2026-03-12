@@ -190,6 +190,7 @@ class SessionService:
                 'hintLevel': last_hint.level,
                 'kind': last_hint.kind,
                 'text': last_hint.text,
+                'source': last_hint.source,
                 'confidence': clue_state.validation.confidence if clue_state.validation else None,
             }
 
@@ -197,7 +198,7 @@ class SessionService:
         if len(clue_state.hint_plan) < 5:
             plan_result = self.runtime.next_hint(clue, clue_state.current_pattern, next_level, puzzle, session)
             self._accumulate_runtime_usage(session, plan_result)
-            clue_state.hint_plan = [HintRecord(level=hint['level'], kind=hint['kind'], text=hint['text']) for hint in plan_result['hints']]
+            clue_state.hint_plan = [HintRecord(level=hint['level'], kind=hint['kind'], text=hint['text'], source=hint.get('source', 'agent')) for hint in plan_result['hints']]
         clue_state.hint_level_shown = next_level
         revealed = [hint for hint in clue_state.hint_plan if hint.level <= next_level]
         clue_state.hints = revealed
@@ -207,6 +208,7 @@ class SessionService:
             'hintLevel': current_hint.level,
             'kind': current_hint.kind,
             'text': current_hint.text,
+            'source': current_hint.source,
             'confidence': None,
         }
         self.store.save(session)

@@ -32,6 +32,7 @@ export interface HintRecord {
   level: number;
   kind: HintKind;
   text: string;
+  source?: 'agent' | 'heuristic';
 }
 
 export interface ValidationRecord {

@@ -42,7 +42,7 @@ def next_hint(
         raise HTTPException(status_code=404, detail="session_not_found") from exc
     updated_session, result = session_service.next_hint(puzzle, session_id, clue_id)
     history = [
-        {"level": hint.level, "kind": hint.kind.value}
+        {"level": hint.level, "kind": hint.kind.value, "source": hint.source}
         for hint in updated_session.clue_states[clue_id].hints
     ]
     return NextHintResponse(
@@ -50,5 +50,6 @@ def next_hint(
         hintLevel=result["hintLevel"],
         kind=result["kind"],
         text=result["text"],
+        source=result.get("source", "agent"),
         updatedHintHistory=history,
     )

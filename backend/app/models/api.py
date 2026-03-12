@@ -111,6 +111,7 @@ class NextHintResponse(BaseModel):
     hint_level: int = Field(alias="hintLevel")
     kind: HintKind
     text: str
+    source: str = "agent"
     updated_hint_history: list[dict[str, int | str]] = Field(alias="updatedHintHistory")
 
 
