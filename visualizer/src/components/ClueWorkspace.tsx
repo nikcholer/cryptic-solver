@@ -6,6 +6,7 @@ import { HintStack } from './HintStack';
 interface ClueWorkspaceProps {
   clue: PuzzleClue | null;
   clueState: ClueState | null;
+  runtimeConfigured?: boolean;
   draftAnswer: string;
   justification: string;
   thesaurusTerm: string;
@@ -24,6 +25,7 @@ interface ClueWorkspaceProps {
 export function ClueWorkspace({
   clue,
   clueState,
+  runtimeConfigured,
   draftAnswer,
   justification,
   thesaurusTerm,
@@ -145,7 +147,7 @@ export function ClueWorkspace({
         isBusy={isBusy}
       />
 
-      <HintStack hints={clueState?.hints ?? []} />
+      <HintStack hints={clueState?.hints ?? []} runtimeConfigured={runtimeConfigured} />
     </section>
   );
 }

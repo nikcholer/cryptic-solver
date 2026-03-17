@@ -124,6 +124,7 @@ export function App() {
           <ClueWorkspace
             clue={selectedClue}
             clueState={selectedClue ? sessionState.clueStates[selectedClue.id] ?? null : null}
+            runtimeConfigured={sessionState.runtimeConfigured}
             draftAnswer={draftAnswer}
             onDraftAnswerChange={setDraftAnswer}
             justification={justification}

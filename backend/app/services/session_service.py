@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from app.models.api import SessionSnapshot
 from app.models.common import ClueStatus, ValidationResult
 from app.models.puzzle import PuzzleDefinition
@@ -232,6 +234,7 @@ class SessionService:
         return updates
 
     def snapshot(self, session: SessionState) -> SessionSnapshot:
+        runtime_configured = bool(os.environ.get("CROSSWORD_RUNTIME_COMMAND", "").strip())
         return SessionSnapshot(
             selectedClueId=session.selected_clue_id,
             version=session.version,
@@ -239,4 +242,5 @@ class SessionService:
             entries=session.entries,
             clueStates=session.clue_states,
             runtimeUsage=session.runtime_usage,
+            runtimeConfigured=runtime_configured,
         )

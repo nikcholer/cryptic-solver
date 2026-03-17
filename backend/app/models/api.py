@@ -46,6 +46,7 @@ class SessionSnapshot(BaseModel):
     entries: dict[str, EntryRecord]
     clue_states: dict[str, ClueState] = Field(alias="clueStates")
     runtime_usage: RuntimeUsageRecord = Field(alias="runtimeUsage")
+    runtime_configured: bool = Field(default=False, alias="runtimeConfigured")
 
 
 class PuzzleSummary(BaseModel):

@@ -87,85 +87,50 @@ def build_prompt_and_schema(payload: dict[str, Any]) -> tuple[str, dict[str, Any
     linked_entries = context.get('linkedEntries') or []
     referenced_clues = context.get('referencedClues') or []
     if operation == 'next_hint':
-        prompt = f"""
-You are helping a crossword tutor backend. Return JSON only.
-
-Generate a five-level hint ladder for one cryptic clue. Use the supplied symbolicAnalysis as your starting point, but treat it as provisional and revise it if the clue clearly supports a better reading. Keep hints concise, clue-specific, and internally consistent.
-
-Context:
-- clueId: {context['clueId']}
-- clue: {context['clue']}
-- enumeration: {context['enumeration']}
-- pattern: {context['pattern']}
-- hintLevelAlreadyShown: {context['hintLevelAlreadyShown']}
-- clueType: {context['clueType']}
-- definitionText: {context['definitionText']}
-- definitionSide: {context['definitionSide']}
-- indicator: {context.get('indicator')}
-- fodderText: {context.get('fodderText')}
-- solverCandidates: {context.get('solverCandidates')}
-- symbolicAnalysis: {context.get('symbolicAnalysis')}
-- linkedEntries: {linked_entries}
-- referencedClues: {referenced_clues}
-
-Return exactly five hints in order, with kinds fixed as:
-1 clue_type
-2 structure
-3 wordplay_focus
-4 candidate_space
-5 answer_reveal
-
-Rules:
-- Each level must add something new and remain consistent with later levels.
-- Level 1: identify only the likely clue family, or say no single type stands out.
-- Level 2: give high-level structure such as likely definition side and maybe one indicator word.
-- Level 3: mention the specific operation or fodder if helpful.
-- Level 4: narrow the search using meaning, enumeration, or checkers without effectively giving the answer away.
-- Level 5: reveal the answer only if genuinely confident; otherwise say no confident reveal is available yet.
-- Before level 5, do not reveal the answer or use a near-synonym that effectively reveals it.
-- If the clue has linkedEntries or referencedClues, use them as meaningful context.
-- Plain English only; no markdown; do not mention backend fields.
-""".strip()
+        # Keep the prompt compact: on Windows, extremely long CLI arguments can be
+        # truncated or mis-parsed, which can drop critical fields like clue text.
+        prompt = (
+            "Return JSON only. "
+            "Task: generate a five-level hint ladder (exactly five hints) for a cryptic clue. "
+            f"clueId={context.get('clueId')}; "
+            f"clue={context.get('clue')}; "
+            f"enumeration={context.get('enumeration')}; "
+            f"pattern={context.get('pattern')}; "
+            f"hintLevelAlreadyShown={context.get('hintLevelAlreadyShown')}; "
+            f"clueType={context.get('clueType')}; "
+            f"definitionText={context.get('definitionText')}; "
+            f"definitionSide={context.get('definitionSide')}; "
+            f"indicator={context.get('indicator')}; "
+            f"fodderText={context.get('fodderText')}; "
+            f"solverCandidates={context.get('solverCandidates')}; "
+            f"symbolicAnalysis={context.get('symbolicAnalysis')}; "
+            f"linkedEntries={linked_entries}; "
+            f"referencedClues={referenced_clues}. "
+            "Rules: concise, clue-specific, consistent across levels; do not reveal the answer before level 5."
+        )
         return prompt, NEXT_HINT_SCHEMA
 
     if operation == 'semantic_judgement':
-        prompt = f"""
-You are helping a crossword tutor backend. Return JSON only.
-
-Judge whether a proposed answer fits a cryptic clue. Use symbolicAnalysis as deterministic pre-LLM evidence, but do not treat it as guaranteed truth. Consider all plausible definition readings, natural crossword sense, part of speech, and number.
-
-Context:
-- clueId: {context['clueId']}
-- clue: {context['clue']}
-- enumeration: {context['enumeration']}
-- proposedAnswer: {context['proposedAnswer']}
-- definitionText: {context['definitionText']}
-- definitionSide: {context['definitionSide']}
-- clueType: {context['clueType']}
-- indicator: {context.get('indicator')}
-- fodderText: {context.get('fodderText')}
-- solverCandidates: {context.get('solverCandidates')}
-- symbolicAnalysis: {context.get('symbolicAnalysis')}
-- linkedEntries: {linked_entries}
-- referencedClues: {referenced_clues}
-- solverJustification: {context.get('solverJustification')}
-- mechanicalResult: {context['mechanicalResult']}
-
-Rules:
-- confirmed: strong definition fit; include brief wordplay explanation if it is clear.
-- plausible: could fit, or the likely definition span may differ from the current guess.
-- conflict: fails against all plausible definition readings.
-- Do not reject an answer merely because it overturns an earlier parse guess.
-- Treat symbolicAnalysis as the deterministic starting point for letter mechanics. Use it if it supports a parse; if it is weak or unresolved, say so rather than inventing a detailed new mechanism.
-- Only describe precise letter operations when they are supported by symbolicAnalysis, solverJustification, or an obvious one-step clue device.
-- If symbolicAnalysis has no solverCandidates and no fodderText, avoid speculative assembly/disassembly claims and judge mainly on definition fit unless solverJustification clearly supplies the mechanics.
-- If the answer seems semantically plausible but the mechanics are unresolved, set result to plausible and use symbolicFollowup to suggest the next symbolic search the caller should try.
-- symbolicFollowup should be null unless you are explicitly suggesting a targeted symbolic next step such as testing an insertion, anagram fodder, hidden answer span, or letter-selection pattern.
-- If solverJustification is present, treat it as extra human evidence, not an automatic override.
-- Prefer explanation with both definition and wordplay for straightforward clues.
-- Inspect the clue itself for simple mechanisms such as anagram, containment, reversal, hidden answer, initial letters, charade, or homophone.
-- Keep the reason concise, natural, and free of backend/internal terminology.
-""".strip()
+        prompt = (
+            "Return JSON only. "
+            "Task: judge whether a proposed answer fits a cryptic clue. "
+            f"clueId={context.get('clueId')}; "
+            f"clue={context.get('clue')}; "
+            f"enumeration={context.get('enumeration')}; "
+            f"proposedAnswer={context.get('proposedAnswer')}; "
+            f"definitionText={context.get('definitionText')}; "
+            f"definitionSide={context.get('definitionSide')}; "
+            f"clueType={context.get('clueType')}; "
+            f"indicator={context.get('indicator')}; "
+            f"fodderText={context.get('fodderText')}; "
+            f"solverCandidates={context.get('solverCandidates')}; "
+            f"symbolicAnalysis={context.get('symbolicAnalysis')}; "
+            f"linkedEntries={linked_entries}; "
+            f"referencedClues={referenced_clues}; "
+            f"solverJustification={context.get('solverJustification')}; "
+            f"mechanicalResult={context.get('mechanicalResult')}. "
+            "Rules: confirmed/plausible/conflict; keep reason concise; use symbolicFollowup only for targeted next step."
+        )
         return prompt, SEMANTIC_SCHEMA
 
     raise ValueError(f'Unsupported operation: {operation}')
@@ -184,10 +149,19 @@ def invoke_codex(prompt: str, schema: dict[str, Any], capability: str | None) ->
         # Read the prompt back as a single string to avoid Windows CLI
         # argument truncation with multi-line strings.
         prompt_text = prompt_path.read_text(encoding='utf-8')
+        # Normalize Windows newlines. Some CLI stacks treat `\r` as a hard
+        # terminator when ingesting prompt strings, which can drop everything
+        # after the first line (including the clue text).
+        prompt_text = prompt_text.replace('\r\n', '\n').replace('\r', '\n')
+        if not prompt_text.strip():
+            _print_error('Empty prompt passed to Codex.')
+            return None
+        # NOTE: `codex exec` expects flags before the PROMPT argument.
+        # If the prompt is placed before flags, Codex can treat later tokens as
+        # part of the prompt, ignoring options like --json and --output-schema.
         command = [
             *resolve_codex_command(),
             'exec',
-            prompt_text,
             '--skip-git-repo-check',
             '--sandbox',
             'read-only',
@@ -205,6 +179,7 @@ def invoke_codex(prompt: str, schema: dict[str, Any], capability: str | None) ->
             '-C',
             str(ROOT),
         ])
+        command.append(prompt_text)
         completed = subprocess.run(
             command,
             capture_output=True,

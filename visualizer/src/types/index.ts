@@ -71,6 +71,7 @@ export interface SessionState {
   entries: Record<string, EntryRecord>;
   clueStates: Record<string, ClueState>;
   runtimeUsage: RuntimeUsage;
+  runtimeConfigured?: boolean;
 }
 
 export interface PuzzleSummary {
