@@ -1,0 +1,86 @@
+across:
+  1A:
+    clue: Beatles song, or one from The Tourists?
+    enum: (3,7)
+  6A:
+    clue: Groom horse, taking minutes
+    enum: (4)
+  9A:
+    clue: A lot of land trespasser calmly goes around to the west
+    enum: (5)
+  10A:
+    clue: Goes to court entrance, finding drunk is outside
+    enum: (9)
+  12A:
+    clue: Learn the story about what may bring snow
+    enum: (5-8)
+  14A:
+    clue: Son off to visit Mike and Iris regularly in US state
+    enum: (8)
+  15A:
+    clue: Completely keen on Tokyo's outskirts
+    enum: (2,4)
+  17A:
+    clue: Key put back
+    enum: (6)
+  19A:
+    clue: Unlocked shed is mine
+    enum: (4-4)
+  22A:
+    clue: Close-run things requiring snap decisions
+    enum: (5,8)
+  24A:
+    clue: Be out for too long? Resolve to break record
+    enum: (9)
+  25A:
+    clue: Fish hook
+    enum: (5)
+  26A:
+    clue: Contentment of student dropping off rent
+    enum: (4)
+  27A:
+    clue: Squeal before the force arrests one shoplifter?
+    enum: (5,5)
+down:
+  1D:
+    clue: Sugar at an exorbitant price
+    enum: (4)
+  2D:
+    clue: Underwear's ultimate in fancy bows
+    enum: (1-6)
+  3D:
+    clue: VAT troubles for movie
+    enum: (9,4)
+  4D:
+    clue: Swimmer's rich pal posing with daughter
+    enum: (8)
+  5D:
+    clue: Catch spouse scratching bottom, rolling over
+    enum: (6)
+  7D:
+    clue: Love new group of three musicians touring a part of Canada
+    enum: (7)
+  8D:
+    clue: Overbearing type, my chemist stocks empty shelves
+    enum: (10)
+  11D:
+    clue: Take advantage of rewarding set-up and heckle?
+    enum: (3,2,2,3,3)
+  13D:
+    clue: Electronic device disturbed mother's nap
+    enum: (10)
+  16D:
+    clue: Leave with most of fruit and veg
+    enum: (5,3)
+  18D:
+    clue: Get these gardening tools as temperature lowers unexpectedly
+    enum: (7)
+  20D:
+    clue: Turned over some carriages, salvaging weapon
+    enum: (7)
+  21D:
+    clue: Sink India before noon, or capitulate?
+    enum: (4,2)
+  23D:
+    clue: Drone perhaps beginning to film grouse
+    enum: (4)

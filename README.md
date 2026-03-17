@@ -63,7 +63,7 @@ The tutor UI lets you solve cryptic crosswords with guided hints and real-time v
 ```bash
 # Start the backend
 pip install -r requirements.txt
-uvicorn app.main:app --app-dir backend --reload
+python -m uvicorn app.main:app --app-dir backend --reload
 
 # In a separate terminal, start the frontend
 cd visualizer
