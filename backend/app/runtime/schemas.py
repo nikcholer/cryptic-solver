@@ -80,7 +80,7 @@ class RuntimeRequest(BaseModel):
 class SemanticJudgementRequest(BaseModel):
     skill: str
     operation: Literal['semantic_judgement'] = 'semantic_judgement'
-    capability: CapabilityRole = 'lite'
+    capability: CapabilityRole = 'reasoner'
     response_format: Literal['json'] = 'json'
     context: SemanticJudgementContext
 

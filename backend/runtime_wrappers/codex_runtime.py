@@ -111,6 +111,12 @@ def build_prompt_and_schema(payload: dict[str, Any]) -> tuple[str, dict[str, Any
         return prompt, NEXT_HINT_SCHEMA
 
     if operation == 'semantic_judgement':
+        justification = context.get('solverJustification')
+        justification_rule = (
+            f" CRITICAL RULE: The user provided a solverJustification: '{justification}'. "
+            "Evaluate their logic. If their core idea represents a valid parse, return 'confirmed'. Do NOT be overly pedantic or reject it just because they omitted minor details (like naming explicit indicators) in their explanation."
+        ) if justification else ""
+
         prompt = (
             "Return JSON only. "
             "Task: judge whether a proposed answer fits a cryptic clue. "
@@ -127,9 +133,8 @@ def build_prompt_and_schema(payload: dict[str, Any]) -> tuple[str, dict[str, Any
             f"symbolicAnalysis={context.get('symbolicAnalysis')}; "
             f"linkedEntries={linked_entries}; "
             f"referencedClues={referenced_clues}; "
-            f"solverJustification={context.get('solverJustification')}; "
             f"mechanicalResult={context.get('mechanicalResult')}. "
-            "Rules: confirmed/plausible/conflict; keep reason concise; use symbolicFollowup only for targeted next step."
+            f"Rules: confirmed/plausible/conflict; keep reason concise; use symbolicFollowup only for targeted next step.{justification_rule}"
         )
         return prompt, SEMANTIC_SCHEMA
 
