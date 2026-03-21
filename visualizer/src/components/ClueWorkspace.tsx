@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { ClueState, PuzzleClue, ThesaurusCandidate } from '../types';
 import { formatStatus } from '../format';
 import { ThesaurusPanel } from './ThesaurusPanel';
@@ -40,6 +41,15 @@ export function ClueWorkspace({
   onRequestHint,
   isBusy,
 }: ClueWorkspaceProps) {
+  useEffect(() => {
+    if (clue && !isBusy) {
+      // slight delay ensures the input renders if transitioning from empty state
+      setTimeout(() => {
+        document.getElementById('clue-answer-input')?.focus();
+      }, 50);
+    }
+  }, [clue?.id, isBusy]);
+
   if (!clue) {
     return (
       <section className="workspace-card workspace-empty">

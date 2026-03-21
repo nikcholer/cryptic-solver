@@ -114,7 +114,9 @@ def build_prompt_and_schema(payload: dict[str, Any]) -> tuple[str, dict[str, Any
         justification = context.get('solverJustification')
         justification_rule = (
             f" CRITICAL RULE: The user provided a solverJustification: '{justification}'. "
-            "Evaluate their logic. If their core idea represents a valid parse, return 'confirmed'. Do NOT be overly pedantic or reject it just because they omitted minor details (like naming explicit indicators) in their explanation."
+            "Evaluate their logic. If their core idea represents a valid parse, return 'confirmed'. "
+            "Do NOT be overly pedantic about the exact mathematical ordering of nested containers, insertions, or minor omissions. "
+            "If the wordplay elements they identified logically assemble into the answer, accept it as 'confirmed'."
         ) if justification else ""
 
         prompt = (
