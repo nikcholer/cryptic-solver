@@ -136,7 +136,8 @@ def build_prompt_and_schema(payload: dict[str, Any]) -> tuple[str, dict[str, Any
             f"linkedEntries={linked_entries}; "
             f"referencedClues={referenced_clues}; "
             f"mechanicalResult={context.get('mechanicalResult')}. "
-            f"Rules: confirmed/plausible/conflict; keep reason concise; use symbolicFollowup only for targeted next step.{justification_rule}"
+            f"Rules: confirmed/plausible/conflict; keep reason concise; use symbolicFollowup only for targeted next step. "
+            f"Do NOT leak internal variable labels (e.g. definitionText, definitionSide) to the user in your text; use natural language.{justification_rule}"
         )
         return prompt, SEMANTIC_SCHEMA
 
