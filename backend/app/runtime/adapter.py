@@ -637,7 +637,7 @@ def _normalize_pattern(pattern: str, clue_length: int) -> str:
 
 
 def _matches_pattern(answer: str, pattern: str) -> bool:
-    if len(answer) != len(pattern):
+    if len(answer) < len(pattern):
         return False
     return all(expected == '.' or expected == actual for actual, expected in zip(answer, pattern))
 
