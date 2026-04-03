@@ -25,13 +25,23 @@ npm run dev
 
 The dev server starts at `http://localhost:5173` by default and proxies API requests to the backend at `http://localhost:8000`.
 
+For split hosting, set `VITE_API_BASE_URL` to the deployed backend origin so the SPA calls the API by full URL instead of relying on same-origin `/api` paths.
+
 ### Environment Variables
 
 | Variable | Purpose | Default |
 |----------|---------|---------|
 | `VITE_PUZZLE_ID` | Puzzle loaded on first visit (must match a puzzle ID known to the backend) | `cryptic-2026-03-03` |
+| `VITE_API_BASE_URL` | Base URL for the backend API in split deployments, e.g. `https://cryptic-api.onrender.com` | empty (same-origin / dev proxy) |
 
 Set Vite env vars in a `.env.local` file or inline: `VITE_PUZZLE_ID=prize-cryptic-85080 npm run dev`.
+
+Example split-hosting `.env.local`:
+
+```bash
+VITE_API_BASE_URL=https://your-backend-host.example.com
+VITE_PUZZLE_ID=cryptic-2026-03-03
+```
 
 ## Components
 

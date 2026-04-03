@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from dotenv import load_dotenv
 
@@ -29,6 +30,20 @@ from app.api.sessions import router as sessions_router
 from app.api.thesaurus import router as thesaurus_router
 
 app = FastAPI(title="Cryptic Tutor Backend", version="0.1.0")
+
+cors_origins = [
+    origin.strip()
+    for origin in os.environ.get('CROSSWORD_CORS_ORIGINS', '').split(',')
+    if origin.strip()
+]
+if cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 app.include_router(puzzles_router)
 app.include_router(sessions_router)
 app.include_router(clues_router)
