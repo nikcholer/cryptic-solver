@@ -310,6 +310,7 @@ Notes:
 - Keep filesystem-backed sessions for first deployment unless hosting constraints force an earlier storage migration.
 - Add a second session-store implementation for hosted persistence.
 - Add a second puzzle-store implementation for hosted persistence.
+- Decide whether cleanup runs manually, on deploy, or on a schedule.
 - After storage is abstracted, refactor solver subprocess calls into in-process imports.
 
 ### Explicit non-goals for first deployment

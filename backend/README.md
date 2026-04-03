@@ -20,6 +20,18 @@ Run the edge-case evaluation harness with:
 python backend/tools/evaluate_edge_cases.py
 ```
 
+Clean up expired runtime data with:
+
+```bash
+python backend/tools/cleanup_runtime_data.py
+```
+
+Adjust retention explicitly if needed:
+
+```bash
+python backend/tools/cleanup_runtime_data.py --session-ttl-hours 72 --import-ttl-hours 24
+```
+
 ## Environment Variables
 
 All environment variables are optional. The backend runs fully locally with no configuration.

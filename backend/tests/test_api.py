@@ -33,6 +33,15 @@ from app.models.common import ValidationResult  # noqa: E402
 from app.services.thesaurus_service import ThesaurusService  # noqa: E402
 
 
+class CleanupToolTests(unittest.TestCase):
+    def test_cleanup_tool_parser_defaults(self) -> None:
+        from backend.tools.cleanup_runtime_data import build_parser
+
+        args = build_parser().parse_args([])
+        self.assertEqual(args.session_ttl_hours, 168)
+        self.assertEqual(args.import_ttl_hours, 168)
+
+
 class BackendServiceTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
