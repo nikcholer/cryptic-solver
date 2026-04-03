@@ -9,7 +9,7 @@ from app.services.puzzle_import_service import PuzzleImportService
 from app.services.puzzle_loader import PuzzleLoader
 from app.services.session_service import SessionService
 from app.services.thesaurus_service import ThesaurusService
-from app.stores.session_store import SessionStore
+from app.stores.session_store import build_session_store
 
 
 @lru_cache(maxsize=1)
@@ -25,7 +25,7 @@ def get_puzzle_loader() -> PuzzleLoader:
 @lru_cache(maxsize=1)
 def get_session_service() -> SessionService:
     repo_root = get_repo_root()
-    return SessionService(SessionStore(repo_root), GridEngine(), build_runtime_adapter(repo_root))
+    return SessionService(build_session_store(repo_root), GridEngine(), build_runtime_adapter(repo_root))
 
 
 @lru_cache(maxsize=1)

@@ -218,10 +218,10 @@ This section records the current plan derived from the discussion above and the 
 
 ### Current state in repo
 
-- `visualizer/` is already a standalone React SPA, but it still assumes same-origin API calls such as `/api/...`.
-- `backend/` is already a standalone FastAPI service.
-- The frontend currently relies on the Vite dev proxy for local development.
-- The backend currently persists session state to `backend_data/sessions/`.
+- `visualizer/` is already a standalone React SPA and now uses an explicit `VITE_API_BASE_URL` in development and deployment.
+- `backend/` is already a standalone FastAPI service with CORS support for split hosting.
+- Local development now mirrors split hosting: SPA on `127.0.0.1:5173`, API on `127.0.0.1:8000`.
+- Session persistence is now behind a store interface, with the current implementation still writing to `backend_data/sessions/`.
 - PDF import currently writes puzzle artifacts into `samples/`.
 - Deterministic solver calls still run via Python subprocesses against `cryptic_skills/*.py`.
 
@@ -248,8 +248,8 @@ Goal: get the existing app running as SPA + external API with the fewest moving 
 
 Work:
 
-- Add a frontend `VITE_API_BASE_URL` so production builds can call the backend by full URL instead of assuming same-origin `/api`.
-- Keep the existing Vite proxy for local development.
+- Add a frontend `VITE_API_BASE_URL` so builds call the backend by full URL.
+- Make local development use the same explicit-addressing model as split hosting.
 - Add FastAPI CORS middleware so the deployed SPA origin is allowed to call the deployed API.
 - Add backend deployment configuration and environment documentation.
 - Add frontend deployment documentation for Vercel.
@@ -306,13 +306,10 @@ Notes:
 
 ### Immediate backlog
 
-- Add `VITE_API_BASE_URL` and centralize API URL construction in the frontend.
-- Add backend CORS configuration driven by environment variables.
-- Document frontend and backend deployment separately.
-- Add deployment env examples for SPA and API.
 - Decide the first API hosting target.
 - Keep filesystem-backed sessions for first deployment unless hosting constraints force an earlier storage migration.
-- After split deployment is stable, abstract session and import storage.
+- Add a second session-store implementation for hosted persistence.
+- Abstract imported puzzle persistence behind a matching store boundary.
 - After storage is abstracted, refactor solver subprocess calls into in-process imports.
 
 ### Explicit non-goals for first deployment

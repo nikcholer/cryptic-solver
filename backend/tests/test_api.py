@@ -24,7 +24,7 @@ from app.runtime.adapter import (  # noqa: E402
 from app.services.grid_engine import GridEngine  # noqa: E402
 from app.services.puzzle_loader import PuzzleLoader  # noqa: E402
 from app.services.session_service import SessionService  # noqa: E402
-from app.stores.session_store import SessionStore  # noqa: E402
+from app.stores.session_store import FileSessionStore, build_session_store  # noqa: E402
 from app.models.session import HintRecord  # noqa: E402
 from app.models.common import ValidationResult  # noqa: E402
 from app.services.thesaurus_service import ThesaurusService  # noqa: E402
@@ -37,13 +37,29 @@ class BackendServiceTests(unittest.TestCase):
         self.loader = PuzzleLoader(REPO_ROOT)
         self.puzzle = self.loader.load_puzzle('cryptic-2026-03-03')
         self.service = SessionService(
-            SessionStore(self.repo_root),
+            FileSessionStore(self.repo_root),
             GridEngine(),
             HeuristicRuntimeAdapter(REPO_ROOT),
         )
 
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
+
+    def test_build_session_store_defaults_to_filesystem(self) -> None:
+        store = build_session_store(self.repo_root)
+        self.assertIsInstance(store, FileSessionStore)
+
+    def test_build_session_store_rejects_unknown_backend(self) -> None:
+        previous = os.environ.get('CROSSWORD_SESSION_STORE')
+        os.environ['CROSSWORD_SESSION_STORE'] = 'redis'
+        try:
+            with self.assertRaises(ValueError):
+                build_session_store(self.repo_root)
+        finally:
+            if previous is None:
+                os.environ.pop('CROSSWORD_SESSION_STORE', None)
+            else:
+                os.environ['CROSSWORD_SESSION_STORE'] = previous
 
     def test_create_session(self) -> None:
         session = self.service.create_session(self.puzzle)
@@ -97,7 +113,7 @@ class BackendServiceTests(unittest.TestCase):
                     'confidence': 0.2,
                 }
 
-        service = SessionService(SessionStore(self.repo_root / 'revealed-answer'), GridEngine(), RejectingAdapter())
+        service = SessionService(FileSessionStore(self.repo_root / 'revealed-answer'), GridEngine(), RejectingAdapter())
         session = service.create_session(self.puzzle)
         session.clue_states['4D'].hints.append(HintRecord(level=5, kind='answer_reveal', text="ESTABLISH. It comes from his table's wobbly."))
         session.clue_states['4D'].hint_level_shown = 5
@@ -115,7 +131,7 @@ class BackendServiceTests(unittest.TestCase):
                 captured['justification'] = solver_justification
                 return super().validate_answer(clue, proposed_answer, pattern_before, puzzle, session, solver_justification)
 
-        service = SessionService(SessionStore(self.repo_root / 'fallback-justification'), GridEngine(), CapturingAdapter())
+        service = SessionService(FileSessionStore(self.repo_root / 'fallback-justification'), GridEngine(), CapturingAdapter())
         session = service.create_session(self.puzzle)
         session.clue_states['4D'].hints.append(
             HintRecord(level=5, kind='answer_reveal', text="ESTABLISH. It comes from his table's wobbly.")
@@ -142,7 +158,7 @@ class BackendServiceTests(unittest.TestCase):
         runtime_script = self._write_runtime_script()
         gateway = CommandRuntimeGateway([sys.executable, str(runtime_script)], REPO_ROOT)
         service = SessionService(
-            SessionStore(self.repo_root / 'runtime-usage'),
+            FileSessionStore(self.repo_root / 'runtime-usage'),
             GridEngine(),
             HeuristicRuntimeAdapter(REPO_ROOT, semantic_adjudicator=GatewaySemanticAdjudicator(gateway), runtime_gateway=gateway),
         )
@@ -272,7 +288,7 @@ class BackendServiceTests(unittest.TestCase):
     def test_composite_clue_propagates_status_to_linked_entries(self) -> None:
         puzzle = self.loader.load_puzzle('prize-cryptic-83730')
         service = SessionService(
-            SessionStore(self.repo_root / 'composite-status'),
+            FileSessionStore(self.repo_root / 'composite-status'),
             GridEngine(),
             StubRuntimeAdapter(),
         )
@@ -290,7 +306,7 @@ class BackendServiceTests(unittest.TestCase):
     def test_composite_clue_spans_linked_entries(self) -> None:
         puzzle = self.loader.load_puzzle('prize-cryptic-83730')
         service = SessionService(
-            SessionStore(self.repo_root / 'composite'),
+            FileSessionStore(self.repo_root / 'composite'),
             GridEngine(),
             StubRuntimeAdapter(),
         )
@@ -314,7 +330,7 @@ class BackendServiceTests(unittest.TestCase):
         runtime_script = self._write_runtime_script()
         gateway = CommandRuntimeGateway([sys.executable, str(runtime_script)], REPO_ROOT)
         service = SessionService(
-            SessionStore(self.repo_root / 'runtime-hint'),
+            FileSessionStore(self.repo_root / 'runtime-hint'),
             GridEngine(),
             HeuristicRuntimeAdapter(REPO_ROOT, runtime_gateway=gateway),
         )
@@ -336,7 +352,7 @@ class BackendServiceTests(unittest.TestCase):
 
         puzzle = self.loader.load_puzzle('prize-cryptic-85080')
         adapter = HeuristicRuntimeAdapter(REPO_ROOT, semantic_adjudicator=FollowupAdjudicator())
-        service = SessionService(SessionStore(self.repo_root / 'symbolic-followup'), GridEngine(), adapter)
+        service = SessionService(FileSessionStore(self.repo_root / 'symbolic-followup'), GridEngine(), adapter)
         session = service.create_session(puzzle)
         result = service.check_answer(puzzle, session.session_id, '6D', 'LIKELY')
         self.assertEqual(result['result'].value, 'plausible')
@@ -354,7 +370,7 @@ class BackendServiceTests(unittest.TestCase):
             semantic_adjudicator=GatewaySemanticAdjudicator(gateway),
             runtime_gateway=gateway,
         )
-        service = SessionService(SessionStore(self.repo_root / 'runtime-semantic'), GridEngine(), adapter)
+        service = SessionService(FileSessionStore(self.repo_root / 'runtime-semantic'), GridEngine(), adapter)
         session = service.create_session(self.puzzle)
         result = service.check_answer(self.puzzle, session.session_id, '4D', 'ESTABLISH')
         self.assertEqual(result['result'].value, 'plausible')
@@ -363,7 +379,7 @@ class BackendServiceTests(unittest.TestCase):
     def test_reference_context_includes_linked_entries_and_solved_references(self) -> None:
         puzzle = self.loader.load_puzzle('prize-cryptic-83730')
         service = SessionService(
-            SessionStore(self.repo_root / 'reference-context'),
+            FileSessionStore(self.repo_root / 'reference-context'),
             GridEngine(),
             StubRuntimeAdapter(),
         )
@@ -393,7 +409,7 @@ class BackendServiceTests(unittest.TestCase):
     def test_runtime_payload_includes_symbolic_analysis(self) -> None:
         puzzle = self.loader.load_puzzle('prize-cryptic-85080')
         service = SessionService(
-            SessionStore(self.repo_root / 'symbolic-payload'),
+            FileSessionStore(self.repo_root / 'symbolic-payload'),
             GridEngine(),
             StubRuntimeAdapter(),
         )
