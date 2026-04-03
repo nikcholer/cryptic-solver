@@ -2,20 +2,19 @@ from __future__ import annotations
 
 import json
 import re
-from pathlib import Path
 
 import yaml
 
 from app.models.puzzle import PuzzleClue, PuzzleDefinition, PuzzleGrid
+from app.stores.puzzle_store import PuzzleStore
 
 
 class PuzzleLoader:
-    def __init__(self, repo_root: Path) -> None:
-        self.repo_root = repo_root
-        self.samples_dir = repo_root / "samples"
+    def __init__(self, store: PuzzleStore) -> None:
+        self.store = store
 
     def load_puzzle(self, puzzle_id: str) -> PuzzleDefinition:
-        puzzle_dir = self.samples_dir / puzzle_id
+        puzzle_dir = self.store.get_puzzle_dir(puzzle_id)
         if not puzzle_dir.exists():
             raise FileNotFoundError(f"Unknown puzzle_id: {puzzle_id}")
 
@@ -41,17 +40,8 @@ class PuzzleLoader:
                 )
         return PuzzleDefinition(puzzle_id=puzzle_id, grid=grid, clues=clues)
 
-
     def list_puzzles(self) -> list[str]:
-        if not self.samples_dir.exists():
-            return []
-        puzzle_ids: list[str] = []
-        for child in sorted(self.samples_dir.iterdir(), key=lambda item: item.name):
-            if not child.is_dir():
-                continue
-            if (child / "grid_state.json").exists() and (child / "clues.yaml").exists():
-                puzzle_ids.append(child.name)
-        return puzzle_ids
+        return self.store.list_puzzle_ids()
 
     def _answer_length(self, enum: str | None, fallback: int) -> int:
         if not enum:

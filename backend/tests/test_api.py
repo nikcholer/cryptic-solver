@@ -24,7 +24,8 @@ from app.runtime.adapter import (  # noqa: E402
 from app.services.grid_engine import GridEngine  # noqa: E402
 from app.services.puzzle_loader import PuzzleLoader  # noqa: E402
 from app.services.session_service import SessionService  # noqa: E402
-from app.stores.session_store import FileSessionStore, build_session_store  # noqa: E402
+from app.stores.puzzle_store import FilePuzzleStore, build_puzzle_store  # noqa: E402
+from app.stores.session_store import FileSessionStore, SQLiteSessionStore, build_session_store  # noqa: E402
 from app.models.session import HintRecord  # noqa: E402
 from app.models.common import ValidationResult  # noqa: E402
 from app.services.thesaurus_service import ThesaurusService  # noqa: E402
@@ -34,7 +35,7 @@ class BackendServiceTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp_dir = tempfile.TemporaryDirectory()
         self.repo_root = Path(self.temp_dir.name)
-        self.loader = PuzzleLoader(REPO_ROOT)
+        self.loader = PuzzleLoader(FilePuzzleStore(REPO_ROOT))
         self.puzzle = self.loader.load_puzzle('cryptic-2026-03-03')
         self.service = SessionService(
             FileSessionStore(self.repo_root),
@@ -45,9 +46,44 @@ class BackendServiceTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
 
+    def test_build_puzzle_store_defaults_to_filesystem(self) -> None:
+        store = build_puzzle_store(self.repo_root)
+        self.assertIsInstance(store, FilePuzzleStore)
+
+    def test_build_puzzle_store_rejects_unknown_backend(self) -> None:
+        previous = os.environ.get('CROSSWORD_PUZZLE_STORE')
+        os.environ['CROSSWORD_PUZZLE_STORE'] = 's3'
+        try:
+            with self.assertRaises(ValueError):
+                build_puzzle_store(self.repo_root)
+        finally:
+            if previous is None:
+                os.environ.pop('CROSSWORD_PUZZLE_STORE', None)
+            else:
+                os.environ['CROSSWORD_PUZZLE_STORE'] = previous
+
     def test_build_session_store_defaults_to_filesystem(self) -> None:
         store = build_session_store(self.repo_root)
         self.assertIsInstance(store, FileSessionStore)
+
+    def test_build_session_store_supports_sqlite(self) -> None:
+        previous = os.environ.get('CROSSWORD_SESSION_STORE')
+        os.environ['CROSSWORD_SESSION_STORE'] = 'sqlite'
+        try:
+            store = build_session_store(self.repo_root)
+            self.assertIsInstance(store, SQLiteSessionStore)
+        finally:
+            if previous is None:
+                os.environ.pop('CROSSWORD_SESSION_STORE', None)
+            else:
+                os.environ['CROSSWORD_SESSION_STORE'] = previous
+
+    def test_sqlite_session_store_round_trips(self) -> None:
+        store = SQLiteSessionStore(self.repo_root)
+        session = store.create(self.puzzle.puzzle_id, {})
+        loaded = store.load(session.session_id)
+        self.assertEqual(loaded.session_id, session.session_id)
+        self.assertEqual(loaded.puzzle_id, self.puzzle.puzzle_id)
 
     def test_build_session_store_rejects_unknown_backend(self) -> None:
         previous = os.environ.get('CROSSWORD_SESSION_STORE')

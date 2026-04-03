@@ -222,7 +222,7 @@ This section records the current plan derived from the discussion above and the 
 - `backend/` is already a standalone FastAPI service with CORS support for split hosting.
 - Local development now mirrors split hosting: SPA on `127.0.0.1:5173`, API on `127.0.0.1:8000`.
 - Session persistence is now behind a store interface, with the current implementation still writing to `backend_data/sessions/`.
-- PDF import currently writes puzzle artifacts into `samples/`.
+- Imported puzzle persistence is now behind a store interface, with the current implementation still writing into `samples/`.
 - Deterministic solver calls still run via Python subprocesses against `cryptic_skills/*.py`.
 
 ### Target architecture
@@ -309,7 +309,7 @@ Notes:
 - Decide the first API hosting target.
 - Keep filesystem-backed sessions for first deployment unless hosting constraints force an earlier storage migration.
 - Add a second session-store implementation for hosted persistence.
-- Abstract imported puzzle persistence behind a matching store boundary.
+- Add a second puzzle-store implementation for hosted persistence.
 - After storage is abstracted, refactor solver subprocess calls into in-process imports.
 
 ### Explicit non-goals for first deployment

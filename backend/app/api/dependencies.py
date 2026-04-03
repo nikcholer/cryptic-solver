@@ -9,6 +9,7 @@ from app.services.puzzle_import_service import PuzzleImportService
 from app.services.puzzle_loader import PuzzleLoader
 from app.services.session_service import SessionService
 from app.services.thesaurus_service import ThesaurusService
+from app.stores.puzzle_store import build_puzzle_store
 from app.stores.session_store import build_session_store
 
 
@@ -18,8 +19,13 @@ def get_repo_root() -> Path:
 
 
 @lru_cache(maxsize=1)
+def get_puzzle_store():
+    return build_puzzle_store(get_repo_root())
+
+
+@lru_cache(maxsize=1)
 def get_puzzle_loader() -> PuzzleLoader:
-    return PuzzleLoader(get_repo_root())
+    return PuzzleLoader(get_puzzle_store())
 
 
 @lru_cache(maxsize=1)
@@ -30,7 +36,7 @@ def get_session_service() -> SessionService:
 
 @lru_cache(maxsize=1)
 def get_puzzle_import_service() -> PuzzleImportService:
-    return PuzzleImportService(get_repo_root())
+    return PuzzleImportService(get_repo_root(), get_puzzle_store())
 
 
 @lru_cache(maxsize=1)

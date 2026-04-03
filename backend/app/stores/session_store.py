@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import sqlite3
+from contextlib import closing
 from pathlib import Path
 from typing import Protocol
 from uuid import uuid4
@@ -44,8 +46,63 @@ class FileSessionStore:
         return self.base_dir / session_id / "session.json"
 
 
+class SQLiteSessionStore:
+    def __init__(self, repo_root: Path, db_path: Path | None = None) -> None:
+        self.db_path = db_path or (repo_root / 'backend_data' / 'sessions.sqlite3')
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._initialize()
+
+    def create(self, puzzle_id: str, clue_states: dict[str, object]) -> SessionState:
+        session_id = f"sess_{uuid4().hex[:12]}"
+        session = SessionState(session_id=session_id, puzzle_id=puzzle_id, clue_states=clue_states)
+        self.save(session)
+        return session
+
+    def load(self, session_id: str) -> SessionState:
+        with closing(sqlite3.connect(self.db_path)) as connection:
+            row = connection.execute(
+                'SELECT payload_json FROM sessions WHERE session_id = ?',
+                (session_id,),
+            ).fetchone()
+        if row is None:
+            raise FileNotFoundError(session_id)
+        return SessionState.model_validate(json.loads(row[0]))
+
+    def save(self, session: SessionState) -> None:
+        session.version += 1
+        payload_json = session.model_dump_json(indent=2)
+        with closing(sqlite3.connect(self.db_path)) as connection:
+            connection.execute(
+                """
+                INSERT INTO sessions (session_id, puzzle_id, payload_json)
+                VALUES (?, ?, ?)
+                ON CONFLICT(session_id) DO UPDATE SET
+                    puzzle_id = excluded.puzzle_id,
+                    payload_json = excluded.payload_json
+                """,
+                (session.session_id, session.puzzle_id, payload_json),
+            )
+            connection.commit()
+
+    def _initialize(self) -> None:
+        with closing(sqlite3.connect(self.db_path)) as connection:
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS sessions (
+                    session_id TEXT PRIMARY KEY,
+                    puzzle_id TEXT NOT NULL,
+                    payload_json TEXT NOT NULL
+                )
+                """
+            )
+            connection.commit()
+
+
 def build_session_store(repo_root: Path) -> SessionStore:
     store_kind = os.environ.get('CROSSWORD_SESSION_STORE', 'filesystem').strip().lower()
     if store_kind in {'filesystem', 'file'}:
         return FileSessionStore(repo_root)
+    if store_kind in {'sqlite', 'sqlite3'}:
+        db_path = os.environ.get('CROSSWORD_SESSION_SQLITE_PATH', '').strip()
+        return SQLiteSessionStore(repo_root, Path(db_path) if db_path else None)
     raise ValueError(f'Unsupported session store: {store_kind}')
