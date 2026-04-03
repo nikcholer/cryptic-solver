@@ -23,11 +23,12 @@ Phase 1 is complete:
 - API runs on `http://127.0.0.1:8000`.
 - Frontend uses explicit `VITE_API_BASE_URL` instead of a Vite proxy.
 
-Phase 2 is in a good stopping state:
+Phase 2 is complete:
 - session storage is abstracted
 - session backends: `filesystem`, `sqlite`
 - puzzle/import storage is abstracted
-- filesystem roots are configurable by env
+- puzzle/import backends: `filesystem`, `sqlite`
+- filesystem and sqlite roots/paths are configurable by env
 - retention helpers exist for stale sessions and imported puzzles
 - maintenance command exists: `python backend/tools/cleanup_runtime_data.py`
 
@@ -95,6 +96,7 @@ Backend storage-related env vars:
 - `CROSSWORD_SESSION_SQLITE_PATH`
 - `CROSSWORD_PUZZLE_STORE`
 - `CROSSWORD_PUZZLE_FILESYSTEM_ROOT`
+- `CROSSWORD_PUZZLE_SQLITE_PATH`
 
 CORS / hosting env vars:
 - `CROSSWORD_CORS_ORIGINS`

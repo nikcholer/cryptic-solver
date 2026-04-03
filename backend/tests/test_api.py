@@ -26,7 +26,7 @@ from app.runtime.adapter import (  # noqa: E402
 from app.services.grid_engine import GridEngine  # noqa: E402
 from app.services.puzzle_loader import PuzzleLoader  # noqa: E402
 from app.services.session_service import SessionService  # noqa: E402
-from app.stores.puzzle_store import FilePuzzleStore, build_puzzle_store  # noqa: E402
+from app.stores.puzzle_store import FilePuzzleStore, SQLitePuzzleStore, build_puzzle_store  # noqa: E402
 from app.stores.session_store import FileSessionStore, SQLiteSessionStore, build_session_store  # noqa: E402
 from app.models.session import HintRecord  # noqa: E402
 from app.models.common import ValidationResult  # noqa: E402
@@ -94,6 +94,55 @@ class BackendServiceTests(unittest.TestCase):
         self.assertEqual(removed, 1)
         self.assertFalse(puzzle_dir.exists())
         self.assertTrue(bundled_dir.exists())
+
+    def test_build_puzzle_store_supports_sqlite(self) -> None:
+        previous = os.environ.get('CROSSWORD_PUZZLE_STORE')
+        os.environ['CROSSWORD_PUZZLE_STORE'] = 'sqlite'
+        try:
+            store = build_puzzle_store(self.repo_root)
+            self.assertIsInstance(store, SQLitePuzzleStore)
+        finally:
+            if previous is None:
+                os.environ.pop('CROSSWORD_PUZZLE_STORE', None)
+            else:
+                os.environ['CROSSWORD_PUZZLE_STORE'] = previous
+
+    def test_sqlite_puzzle_store_round_trips_imported_puzzle(self) -> None:
+        store = SQLitePuzzleStore(self.repo_root, bundled_dir=REPO_ROOT / 'samples')
+        puzzle_id, puzzle_dir = store.allocate_import_dir('Uploaded Puzzle.pdf')
+        (puzzle_dir / 'clues.yaml').write_text((REPO_ROOT / 'samples' / 'cryptic-2026-03-03' / 'clues.yaml').read_text(encoding='utf-8'), encoding='utf-8')
+        (puzzle_dir / 'grid_state.json').write_text((REPO_ROOT / 'samples' / 'cryptic-2026-03-03' / 'grid_state.json').read_text(encoding='utf-8'), encoding='utf-8')
+        (puzzle_dir / f'{puzzle_id}.pdf').write_bytes(b'%PDF-1.4\n%fake\n')
+        store.finalize_import_dir(puzzle_id, puzzle_dir)
+
+        listed = store.list_puzzle_ids()
+        self.assertIn(puzzle_id, listed)
+
+        hydrated_dir = store.get_puzzle_dir(puzzle_id)
+        self.assertTrue((hydrated_dir / 'clues.yaml').exists())
+        self.assertTrue((hydrated_dir / 'grid_state.json').exists())
+
+        loader = PuzzleLoader(store)
+        loaded = loader.load_puzzle(puzzle_id)
+        self.assertEqual(loaded.puzzle_id, puzzle_id)
+        self.assertIn('1A', loaded.clues)
+
+    def test_sqlite_puzzle_store_cleanup_expired_imports_removes_only_imports(self) -> None:
+        store = SQLitePuzzleStore(self.repo_root, bundled_dir=REPO_ROOT / 'samples')
+        puzzle_id, puzzle_dir = store.allocate_import_dir('Uploaded Puzzle.pdf')
+        (puzzle_dir / 'clues.yaml').write_text((REPO_ROOT / 'samples' / 'cryptic-2026-03-03' / 'clues.yaml').read_text(encoding='utf-8'), encoding='utf-8')
+        (puzzle_dir / 'grid_state.json').write_text((REPO_ROOT / 'samples' / 'cryptic-2026-03-03' / 'grid_state.json').read_text(encoding='utf-8'), encoding='utf-8')
+        store.finalize_import_dir(puzzle_id, puzzle_dir)
+        with closing(sqlite3.connect(store.db_path)) as connection:
+            connection.execute(
+                'UPDATE imported_puzzles SET created_at = ? WHERE puzzle_id = ?',
+                ('2000-01-01T00:00:00+00:00', puzzle_id),
+            )
+            connection.commit()
+        removed = store.cleanup_expired_imports(1)
+        self.assertEqual(removed, 1)
+        self.assertNotIn(puzzle_id, store.list_puzzle_ids())
+        self.assertIn('cryptic-2026-03-03', store.list_puzzle_ids())
 
     def test_build_puzzle_store_rejects_unknown_backend(self) -> None:
         previous = os.environ.get('CROSSWORD_PUZZLE_STORE')

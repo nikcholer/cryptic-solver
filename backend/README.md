@@ -45,6 +45,7 @@ All environment variables are optional. The backend runs fully locally with no c
 | `CROSSWORD_SESSION_SQLITE_PATH` | Optional SQLite database path when `CROSSWORD_SESSION_STORE=sqlite` | `backend_data/sessions.sqlite3` |
 | `CROSSWORD_PUZZLE_STORE` | Puzzle definition/import storage backend selector | `filesystem` |
 | `CROSSWORD_PUZZLE_FILESYSTEM_ROOT` | Optional directory root when `CROSSWORD_PUZZLE_STORE=filesystem` | `samples` |
+| `CROSSWORD_PUZZLE_SQLITE_PATH` | Optional SQLite database path when `CROSSWORD_PUZZLE_STORE=sqlite` | `backend_data/puzzles.sqlite3` |
 | `CROSSWORD_RUNTIME_COMMAND` | Shell command for external LLM integration — receives JSON on stdin, writes JSON on stdout | empty (disabled) |
 | `CROSSWORD_SEMANTIC_COMMAND` | Override just the semantic adjudication path, keeping other operations on the main runtime command | empty (disabled) |
 | `CODEX_MODEL` | Default model when using the Codex wrapper | empty |
@@ -65,7 +66,8 @@ For SPA/API split hosting:
 Local development already uses the same explicit-addressing model, with the SPA calling `http://127.0.0.1:8000` directly.
 
 Session persistence is now behind a store interface. Supported implementations are `filesystem` and `sqlite`.
-Imported puzzle persistence is now behind a matching store interface, with the current implementation selected by `CROSSWORD_PUZZLE_STORE=filesystem`. Both filesystem-backed stores can now be redirected to alternate roots with environment variables.
+Imported puzzle persistence is now behind a matching store interface. Supported implementations are `filesystem` and `sqlite`.
+The SQLite puzzle store keeps bundled sample puzzles on disk while persisting imported puzzles in SQLite and rehydrating them on demand.
 
 
 Example backend setting:

@@ -24,6 +24,7 @@ class PuzzleImportService:
             pdf_path.write_bytes(content)
             self._run([self.python_executable, str(self.clue_extractor), "--pdf", str(pdf_path), "--out", str(clues_path), "--page", str(page)])
             self._run([self.python_executable, str(self.grid_extractor), "--pdf", str(pdf_path), "--out", str(grid_path), "--page", str(page)])
+            self.store.finalize_import_dir(puzzle_id, puzzle_dir)
         except Exception:
             self.store.cleanup_import_dir(puzzle_id)
             raise

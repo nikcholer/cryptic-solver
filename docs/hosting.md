@@ -222,7 +222,7 @@ This section records the current plan derived from the discussion above and the 
 - `backend/` is already a standalone FastAPI service with CORS support for split hosting.
 - Local development now mirrors split hosting: SPA on `127.0.0.1:5173`, API on `127.0.0.1:8000`.
 - Session persistence is now behind a store interface, with `filesystem` and `sqlite` session backends available. Filesystem-backed session storage can be redirected by env.
-- Imported puzzle persistence is now behind a store interface, with the current implementation still filesystem-backed and relocatable by env.
+- Imported puzzle persistence is now behind a store interface, with `filesystem` and `sqlite` backends available.
 - Deterministic solver calls still run via Python subprocesses against `cryptic_skills/*.py`.
 
 ### Target architecture
@@ -270,6 +270,7 @@ Work:
 - Introduce a session store interface with the current filesystem implementation preserved as one adapter.
 - Add a second persistent implementation for hosted environments.
 - Introduce a puzzle/import store abstraction for uploaded PDF-derived puzzles.
+- Add a second persistent implementation for hosted environments.
 - Decide retention rules for imported puzzles and abandoned sessions.
 
 Priority order:
@@ -308,6 +309,7 @@ Notes:
 
 - Decide the first API hosting target.
 - Keep filesystem-backed sessions for first deployment unless hosting constraints force an earlier storage migration.
+- For hosted persistence with minimal operational overhead, prefer SQLite-backed sessions and imported puzzles before considering a separate document database.
 - Add a second session-store implementation for hosted persistence.
 - Add a second puzzle-store implementation for hosted persistence.
 - Decide whether cleanup runs manually, on deploy, or on a schedule.
