@@ -31,11 +31,17 @@ from app.api.thesaurus import router as thesaurus_router
 
 app = FastAPI(title="Cryptic Tutor Backend", version="0.1.0")
 
+default_local_origins = [
+    'http://127.0.0.1:5173',
+    'http://localhost:5173',
+]
 cors_origins = [
     origin.strip()
     for origin in os.environ.get('CROSSWORD_CORS_ORIGINS', '').split(',')
     if origin.strip()
 ]
+if not cors_origins:
+    cors_origins = default_local_origins
 if cors_origins:
     app.add_middleware(
         CORSMiddleware,

@@ -5,7 +5,7 @@ This is the development guide for the FastAPI backend. See the [project README](
 Run locally with:
 
 ```bash
-uvicorn app.main:app --app-dir backend --reload
+uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 8000
 ```
 
 Run smoke tests with:
@@ -27,7 +27,7 @@ All environment variables are optional. The backend runs fully locally with no c
 | Variable | Purpose | Default |
 |----------|---------|---------|
 | `CROSSWORD_RUNTIME_MODE` | Runtime adapter selection: `heuristic` (full local analysis + optional external LLM) or `stub` (length/pattern checks only, useful for UI development without solvers) | `heuristic` |
-| `CROSSWORD_CORS_ORIGINS` | Comma-separated list of frontend origins allowed to call the API in split deployments | empty (no CORS middleware added) |
+| `CROSSWORD_CORS_ORIGINS` | Comma-separated list of frontend origins allowed to call the API in split deployments | `http://127.0.0.1:5173,http://localhost:5173` when unset |
 | `CROSSWORD_RUNTIME_COMMAND` | Shell command for external LLM integration — receives JSON on stdin, writes JSON on stdout | empty (disabled) |
 | `CROSSWORD_SEMANTIC_COMMAND` | Override just the semantic adjudication path, keeping other operations on the main runtime command | empty (disabled) |
 | `CODEX_MODEL` | Default model when using the Codex wrapper | empty |
@@ -44,6 +44,9 @@ For SPA/API split hosting:
 - deploy `backend/` as the API service
 - set the frontend `VITE_API_BASE_URL` to the backend origin
 - set backend `CROSSWORD_CORS_ORIGINS` to include the frontend origin
+
+Local development already uses the same explicit-addressing model, with the SPA calling `http://127.0.0.1:8000` directly.
+
 
 Example backend setting:
 

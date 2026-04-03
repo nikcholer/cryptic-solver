@@ -60,10 +60,12 @@ No external solver call is needed — the `HeuristicAdapter` extracts initials d
 
 The tutor UI lets you solve cryptic crosswords with guided hints and real-time validation.
 
+### Local development
+
 ```bash
 # Start the backend
 pip install -r requirements.txt
-python -m uvicorn app.main:app --app-dir backend --reload
+python -m uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 8000
 
 # In a separate terminal, start the frontend
 cd visualizer
@@ -71,7 +73,30 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. Select a clue, type your answer, and submit. Request hints (5 progressive levels from clue-type identification to full reveal), check answers against the solver engine, and watch crossing letters propagate through the grid.
+Open `http://127.0.0.1:5173`. Select a clue, type your answer, and submit. Request hints (5 progressive levels from clue-type identification to full reveal), check answers against the solver engine, and watch crossing letters propagate through the grid.
+
+Local development now uses explicit API addressing rather than a Vite proxy. The SPA talks to `http://127.0.0.1:8000` via `VITE_API_BASE_URL`, so moving the API elsewhere later is just a frontend base-URL change.
+
+### Split hosting
+
+The current codebase supports split hosting with:
+
+- `visualizer/` deployed as a static SPA
+- `backend/` deployed as a separate FastAPI service
+
+Minimum environment needed:
+
+```bash
+# Frontend
+VITE_API_BASE_URL=https://your-backend-host.example.com
+
+# Backend
+CROSSWORD_CORS_ORIGINS=https://your-frontend-host.example.com
+```
+
+This keeps the browser app talking to the backend by full URL in both local development and split-hosted production.
+
+For the fuller setup and deployment notes, see [visualizer/README.md](visualizer/README.md), [backend/README.md](backend/README.md), and [docs/hosting.md](docs/hosting.md).
 
 See [visualizer/README.md](visualizer/README.md) for the full component map and source layout.
 
