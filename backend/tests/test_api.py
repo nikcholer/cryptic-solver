@@ -50,6 +50,28 @@ class BackendServiceTests(unittest.TestCase):
         store = build_puzzle_store(self.repo_root)
         self.assertIsInstance(store, FilePuzzleStore)
 
+    def test_build_puzzle_store_respects_filesystem_root_override(self) -> None:
+        override_root = self.repo_root / 'custom-puzzles'
+        previous = os.environ.get('CROSSWORD_PUZZLE_FILESYSTEM_ROOT')
+        os.environ['CROSSWORD_PUZZLE_FILESYSTEM_ROOT'] = str(override_root)
+        try:
+            store = build_puzzle_store(self.repo_root)
+            self.assertIsInstance(store, FilePuzzleStore)
+            self.assertEqual(store.base_dir, override_root)
+        finally:
+            if previous is None:
+                os.environ.pop('CROSSWORD_PUZZLE_FILESYSTEM_ROOT', None)
+            else:
+                os.environ['CROSSWORD_PUZZLE_FILESYSTEM_ROOT'] = previous
+
+    def test_file_puzzle_store_allocates_and_cleans_up_import_dir(self) -> None:
+        store = FilePuzzleStore(self.repo_root, self.repo_root / 'imports')
+        puzzle_id, puzzle_dir = store.allocate_import_dir('Uploaded Puzzle.pdf')
+        self.assertEqual(puzzle_id, 'uploaded-puzzle-pdf')
+        self.assertTrue(puzzle_dir.exists())
+        store.cleanup_import_dir(puzzle_id)
+        self.assertFalse(puzzle_dir.exists())
+
     def test_build_puzzle_store_rejects_unknown_backend(self) -> None:
         previous = os.environ.get('CROSSWORD_PUZZLE_STORE')
         os.environ['CROSSWORD_PUZZLE_STORE'] = 's3'
@@ -65,6 +87,20 @@ class BackendServiceTests(unittest.TestCase):
     def test_build_session_store_defaults_to_filesystem(self) -> None:
         store = build_session_store(self.repo_root)
         self.assertIsInstance(store, FileSessionStore)
+
+    def test_build_session_store_respects_filesystem_root_override(self) -> None:
+        override_root = self.repo_root / 'custom-sessions'
+        previous = os.environ.get('CROSSWORD_SESSION_FILESYSTEM_ROOT')
+        os.environ['CROSSWORD_SESSION_FILESYSTEM_ROOT'] = str(override_root)
+        try:
+            store = build_session_store(self.repo_root)
+            self.assertIsInstance(store, FileSessionStore)
+            self.assertEqual(store.base_dir, override_root)
+        finally:
+            if previous is None:
+                os.environ.pop('CROSSWORD_SESSION_FILESYSTEM_ROOT', None)
+            else:
+                os.environ['CROSSWORD_SESSION_FILESYSTEM_ROOT'] = previous
 
     def test_build_session_store_supports_sqlite(self) -> None:
         previous = os.environ.get('CROSSWORD_SESSION_STORE')

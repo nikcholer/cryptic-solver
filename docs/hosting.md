@@ -221,8 +221,8 @@ This section records the current plan derived from the discussion above and the 
 - `visualizer/` is already a standalone React SPA and now uses an explicit `VITE_API_BASE_URL` in development and deployment.
 - `backend/` is already a standalone FastAPI service with CORS support for split hosting.
 - Local development now mirrors split hosting: SPA on `127.0.0.1:5173`, API on `127.0.0.1:8000`.
-- Session persistence is now behind a store interface, with the current implementation still writing to `backend_data/sessions/`.
-- Imported puzzle persistence is now behind a store interface, with the current implementation still writing into `samples/`.
+- Session persistence is now behind a store interface, with `filesystem` and `sqlite` session backends available. Filesystem-backed session storage can be redirected by env.
+- Imported puzzle persistence is now behind a store interface, with the current implementation still filesystem-backed and relocatable by env.
 - Deterministic solver calls still run via Python subprocesses against `cryptic_skills/*.py`.
 
 ### Target architecture

@@ -29,8 +29,10 @@ All environment variables are optional. The backend runs fully locally with no c
 | `CROSSWORD_RUNTIME_MODE` | Runtime adapter selection: `heuristic` (full local analysis + optional external LLM) or `stub` (length/pattern checks only, useful for UI development without solvers) | `heuristic` |
 | `CROSSWORD_CORS_ORIGINS` | Comma-separated list of frontend origins allowed to call the API in split deployments | `http://127.0.0.1:5173,http://localhost:5173` when unset |
 | `CROSSWORD_SESSION_STORE` | Session storage backend selector | `filesystem` |
+| `CROSSWORD_SESSION_FILESYSTEM_ROOT` | Optional directory root when `CROSSWORD_SESSION_STORE=filesystem` | `backend_data/sessions` |
 | `CROSSWORD_SESSION_SQLITE_PATH` | Optional SQLite database path when `CROSSWORD_SESSION_STORE=sqlite` | `backend_data/sessions.sqlite3` |
 | `CROSSWORD_PUZZLE_STORE` | Puzzle definition/import storage backend selector | `filesystem` |
+| `CROSSWORD_PUZZLE_FILESYSTEM_ROOT` | Optional directory root when `CROSSWORD_PUZZLE_STORE=filesystem` | `samples` |
 | `CROSSWORD_RUNTIME_COMMAND` | Shell command for external LLM integration — receives JSON on stdin, writes JSON on stdout | empty (disabled) |
 | `CROSSWORD_SEMANTIC_COMMAND` | Override just the semantic adjudication path, keeping other operations on the main runtime command | empty (disabled) |
 | `CODEX_MODEL` | Default model when using the Codex wrapper | empty |
@@ -51,7 +53,7 @@ For SPA/API split hosting:
 Local development already uses the same explicit-addressing model, with the SPA calling `http://127.0.0.1:8000` directly.
 
 Session persistence is now behind a store interface. Supported implementations are `filesystem` and `sqlite`.
-Imported puzzle persistence is now behind a matching store interface, with the current implementation selected by `CROSSWORD_PUZZLE_STORE=filesystem`.
+Imported puzzle persistence is now behind a matching store interface, with the current implementation selected by `CROSSWORD_PUZZLE_STORE=filesystem`. Both filesystem-backed stores can now be redirected to alternate roots with environment variables.
 
 
 Example backend setting:

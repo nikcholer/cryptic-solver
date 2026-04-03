@@ -20,8 +20,8 @@ class SessionStore(Protocol):
 
 
 class FileSessionStore:
-    def __init__(self, repo_root: Path) -> None:
-        self.base_dir = repo_root / "backend_data" / "sessions"
+    def __init__(self, repo_root: Path, base_dir: Path | None = None) -> None:
+        self.base_dir = base_dir or (repo_root / "backend_data" / "sessions")
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
     def create(self, puzzle_id: str, clue_states: dict[str, object]) -> SessionState:
@@ -101,7 +101,8 @@ class SQLiteSessionStore:
 def build_session_store(repo_root: Path) -> SessionStore:
     store_kind = os.environ.get('CROSSWORD_SESSION_STORE', 'filesystem').strip().lower()
     if store_kind in {'filesystem', 'file'}:
-        return FileSessionStore(repo_root)
+        base_dir = os.environ.get('CROSSWORD_SESSION_FILESYSTEM_ROOT', '').strip()
+        return FileSessionStore(repo_root, Path(base_dir) if base_dir else None)
     if store_kind in {'sqlite', 'sqlite3'}:
         db_path = os.environ.get('CROSSWORD_SESSION_SQLITE_PATH', '').strip()
         return SQLiteSessionStore(repo_root, Path(db_path) if db_path else None)

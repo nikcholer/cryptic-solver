@@ -18,8 +18,8 @@ class PuzzleStore(Protocol):
 
 
 class FilePuzzleStore:
-    def __init__(self, repo_root: Path) -> None:
-        self.base_dir = repo_root / 'samples'
+    def __init__(self, repo_root: Path, base_dir: Path | None = None) -> None:
+        self.base_dir = base_dir or (repo_root / 'samples')
 
     def list_puzzle_ids(self) -> list[str]:
         if not self.base_dir.exists():
@@ -57,5 +57,6 @@ class FilePuzzleStore:
 def build_puzzle_store(repo_root: Path) -> PuzzleStore:
     store_kind = os.environ.get('CROSSWORD_PUZZLE_STORE', 'filesystem').strip().lower()
     if store_kind in {'filesystem', 'file'}:
-        return FilePuzzleStore(repo_root)
+        base_dir = os.environ.get('CROSSWORD_PUZZLE_FILESYSTEM_ROOT', '').strip()
+        return FilePuzzleStore(repo_root, Path(base_dir) if base_dir else None)
     raise ValueError(f'Unsupported puzzle store: {store_kind}')
