@@ -18,6 +18,7 @@ Thumbs.db
 
 # Session data (runtime artefacts, not source)
 backend_data/sessions/
+backend_data/edge-case-eval/
 
 # Node
 node_modules/

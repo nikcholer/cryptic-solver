@@ -20,7 +20,8 @@ from app.runtime.payloads import build_next_hint_request, build_semantic_judgeme
 from app.services.grid_engine import GridEngine  # noqa: E402
 from app.services.puzzle_loader import PuzzleLoader  # noqa: E402
 from app.services.session_service import SessionService  # noqa: E402
-from app.stores.session_store import SessionStore  # noqa: E402
+from app.stores.puzzle_store import build_puzzle_store  # noqa: E402
+from app.stores.session_store import build_session_store  # noqa: E402
 
 
 DEFAULT_CASES = [
@@ -69,7 +70,7 @@ def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
 
-    loader = PuzzleLoader(REPO_ROOT)
+    loader = PuzzleLoader(build_puzzle_store(REPO_ROOT))
     puzzle = loader.load_puzzle(args.puzzle_id)
     adapter = HeuristicRuntimeAdapter(REPO_ROOT)
     grid_state = json.loads((REPO_ROOT / "samples" / args.puzzle_id / "grid_state.json").read_text(encoding="utf-8"))
@@ -180,7 +181,9 @@ def build_profiles(include_codex_53: bool) -> list[dict[str, Any]]:
 
 
 def build_reference_session(puzzle, placed_answers: dict[str, str]):
-    service = SessionService(SessionStore(REPO_ROOT / "backend_data" / "edge-case-eval"), GridEngine(), StubRuntimeAdapter())
+    os.environ.setdefault("CROSSWORD_SESSION_STORE", "filesystem")
+    os.environ.setdefault("CROSSWORD_SESSION_FILESYSTEM_ROOT", str(REPO_ROOT / "backend_data" / "edge-case-eval"))
+    service = SessionService(build_session_store(REPO_ROOT), GridEngine(), StubRuntimeAdapter())
     session = service.create_session(puzzle)
     for clue_id, answer in placed_answers.items():
         if clue_id not in puzzle.clues:
