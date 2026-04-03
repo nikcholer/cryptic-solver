@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import sqlite3
+from contextlib import closing
 import subprocess
 import sys
 import tempfile
@@ -72,6 +74,18 @@ class BackendServiceTests(unittest.TestCase):
         store.cleanup_import_dir(puzzle_id)
         self.assertFalse(puzzle_dir.exists())
 
+    def test_file_puzzle_store_cleanup_expired_imports_only_removes_imported_dirs(self) -> None:
+        store = FilePuzzleStore(self.repo_root, self.repo_root / 'imports')
+        puzzle_id, puzzle_dir = store.allocate_import_dir('Uploaded Puzzle.pdf')
+        metadata_path = puzzle_dir / '.cryptic-meta.json'
+        metadata_path.write_text('{"kind": "imported", "createdAt": "2000-01-01T00:00:00+00:00"}', encoding='utf-8')
+        bundled_dir = store.base_dir / 'bundled'
+        bundled_dir.mkdir(parents=True, exist_ok=True)
+        removed = store.cleanup_expired_imports(1)
+        self.assertEqual(removed, 1)
+        self.assertFalse(puzzle_dir.exists())
+        self.assertTrue(bundled_dir.exists())
+
     def test_build_puzzle_store_rejects_unknown_backend(self) -> None:
         previous = os.environ.get('CROSSWORD_PUZZLE_STORE')
         os.environ['CROSSWORD_PUZZLE_STORE'] = 's3'
@@ -120,6 +134,37 @@ class BackendServiceTests(unittest.TestCase):
         loaded = store.load(session.session_id)
         self.assertEqual(loaded.session_id, session.session_id)
         self.assertEqual(loaded.puzzle_id, self.puzzle.puzzle_id)
+        self.assertIsNotNone(loaded.created_at)
+        self.assertIsNotNone(loaded.updated_at)
+
+    def test_file_session_store_cleanup_expired_removes_stale_sessions(self) -> None:
+        store = FileSessionStore(self.repo_root)
+        session = store.create(self.puzzle.puzzle_id, {})
+        session.updated_at = session.updated_at.replace(year=2000)
+        store.save(session)
+        reloaded = store.load(session.session_id)
+        reloaded.updated_at = reloaded.updated_at.replace(year=2000)
+        session_path = store.base_dir / session.session_id / 'session.json'
+        session_path.write_text(reloaded.model_dump_json(indent=2), encoding='utf-8')
+        removed = store.cleanup_expired(1)
+        self.assertEqual(removed, 1)
+        self.assertFalse((store.base_dir / session.session_id).exists())
+
+    def test_sqlite_session_store_cleanup_expired_removes_stale_sessions(self) -> None:
+        store = SQLiteSessionStore(self.repo_root)
+        session = store.create(self.puzzle.puzzle_id, {})
+        stale_payload = store.load(session.session_id)
+        stale_payload.updated_at = stale_payload.updated_at.replace(year=2000)
+        with closing(sqlite3.connect(store.db_path)) as connection:
+            connection.execute(
+                'UPDATE sessions SET payload_json = ?, updated_at = ? WHERE session_id = ?',
+                (stale_payload.model_dump_json(indent=2), stale_payload.updated_at.isoformat(), session.session_id),
+            )
+            connection.commit()
+        removed = store.cleanup_expired(1)
+        self.assertEqual(removed, 1)
+        with self.assertRaises(FileNotFoundError):
+            store.load(session.session_id)
 
     def test_build_session_store_rejects_unknown_backend(self) -> None:
         previous = os.environ.get('CROSSWORD_SESSION_STORE')

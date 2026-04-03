@@ -1,10 +1,20 @@
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Protocol
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _cutoff_from_hours(ttl_hours: int) -> datetime:
+    return _utc_now() - timedelta(hours=ttl_hours)
 
 
 class PuzzleStore(Protocol):
@@ -15,6 +25,8 @@ class PuzzleStore(Protocol):
     def allocate_import_dir(self, stem: str) -> tuple[str, Path]: ...
 
     def cleanup_import_dir(self, puzzle_id: str) -> None: ...
+
+    def cleanup_expired_imports(self, ttl_hours: int) -> int: ...
 
 
 class FilePuzzleStore:
@@ -39,10 +51,38 @@ class FilePuzzleStore:
         puzzle_id = self._allocate_puzzle_id(stem)
         puzzle_dir = self.base_dir / puzzle_id
         puzzle_dir.mkdir(parents=True, exist_ok=False)
+        metadata = {
+            'kind': 'imported',
+            'createdAt': _utc_now().isoformat(),
+        }
+        (puzzle_dir / '.cryptic-meta.json').write_text(json.dumps(metadata, indent=2), encoding='utf-8')
         return puzzle_id, puzzle_dir
 
     def cleanup_import_dir(self, puzzle_id: str) -> None:
         shutil.rmtree(self.get_puzzle_dir(puzzle_id), ignore_errors=True)
+
+    def cleanup_expired_imports(self, ttl_hours: int) -> int:
+        cutoff = _cutoff_from_hours(ttl_hours)
+        removed = 0
+        if not self.base_dir.exists():
+            return removed
+        for puzzle_dir in self.base_dir.iterdir():
+            if not puzzle_dir.is_dir():
+                continue
+            metadata_path = puzzle_dir / '.cryptic-meta.json'
+            if not metadata_path.exists():
+                continue
+            try:
+                metadata = json.loads(metadata_path.read_text(encoding='utf-8'))
+                if metadata.get('kind') != 'imported':
+                    continue
+                created_at = datetime.fromisoformat(metadata['createdAt'])
+            except Exception:
+                continue
+            if created_at < cutoff:
+                shutil.rmtree(puzzle_dir, ignore_errors=True)
+                removed += 1
+        return removed
 
     def _allocate_puzzle_id(self, stem: str) -> str:
         base = re.sub(r'[^a-z0-9-]+', '-', stem.lower()).strip('-') or 'uploaded-puzzle'
