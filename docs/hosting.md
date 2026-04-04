@@ -310,10 +310,11 @@ Notes:
 
 Status:
 
-- In progress.
+- Core objective complete.
 - Deterministic clue-family solver calls are now in-process.
 - PDF import extraction is now in-process.
 - Remaining external-process usage is the agent/runtime wrapper seam.
+- Any further work here is optional consolidation/polish rather than architectural migration.
 
 ### Product/UX implications
 
@@ -327,8 +328,8 @@ Status:
 - Decide the first API hosting target.
 - For hosted persistence with minimal operational overhead, prefer SQLite-backed sessions and imported puzzles before considering a separate document database.
 - Decide whether cleanup runs manually, on deploy, or on a schedule.
-- Decide whether to stop Phase 3 here or do one more cleanup pass on shared deterministic-tool helpers.
-- If continuing Phase 3, consolidate shared wordlist/pattern/abbreviation loading across solver modules.
+- After the first deployment shape is proven, optionally decide whether to do a cleanup pass on shared deterministic-tool helpers.
+- If doing that optional cleanup later, consolidate shared wordlist/pattern/abbreviation loading across solver modules.
 
 ## Fly.io deployment notes
 
@@ -368,6 +369,84 @@ Operational notes:
 - create the named volume before deploy, for example `fly volumes create cryptic_data --region lhr --size 1`
 - if you enable the external runtime wrapper, make sure its executable and env vars exist in the deployed image or command path
 - cleanup for stale sessions/imported puzzles is still a deployment decision: manual, release step, or scheduled automation
+
+### Local Docker parity check
+
+This is the closest local equivalent to the planned Fly deployment shape.
+
+Build the backend image:
+
+```bash
+docker build -t cryptic-solver-api-local .
+```
+
+Run the backend container with SQLite persisted to the local `backend_data/` directory:
+
+```bash
+docker run --rm -p 8000:8000 \
+  -e CROSSWORD_CORS_ORIGINS=http://127.0.0.1:5173 \
+  -e CROSSWORD_SESSION_STORE=sqlite \
+  -e CROSSWORD_SESSION_SQLITE_PATH=/data/sessions.sqlite3 \
+  -e CROSSWORD_PUZZLE_STORE=sqlite \
+  -e CROSSWORD_PUZZLE_SQLITE_PATH=/data/puzzles.sqlite3 \
+  -e CROSSWORD_PUZZLE_FILESYSTEM_ROOT=/app/samples \
+  -v "$(pwd)/backend_data:/data" \
+  cryptic-solver-api-local
+```
+
+On Windows PowerShell, use:
+
+```powershell
+docker run --rm -p 8000:8000 `
+  -e CROSSWORD_CORS_ORIGINS=http://127.0.0.1:5173 `
+  -e CROSSWORD_SESSION_STORE=sqlite `
+  -e CROSSWORD_SESSION_SQLITE_PATH=/data/sessions.sqlite3 `
+  -e CROSSWORD_PUZZLE_STORE=sqlite `
+  -e CROSSWORD_PUZZLE_SQLITE_PATH=/data/puzzles.sqlite3 `
+  -e CROSSWORD_PUZZLE_FILESYSTEM_ROOT=/app/samples `
+  -v ${PWD}\backend_data:/data `
+  cryptic-solver-api-local
+```
+
+Then run the SPA locally from [`visualizer/`](../visualizer):
+
+```bash
+npm install
+npm run dev -- --host 127.0.0.1 --port 5173
+```
+
+Quick checks:
+- `http://127.0.0.1:8000/health`
+- `http://127.0.0.1:8000/api/puzzles`
+- `http://127.0.0.1:5173`
+
+### First Fly deployment checklist
+
+1. Install and authenticate `flyctl`.
+2. Change the placeholder `app` name in [`fly.toml`](../fly.toml).
+3. Create the volume:
+
+```bash
+fly volumes create cryptic_data --region lhr --size 1
+```
+
+4. Set the required frontend CORS origin:
+
+```bash
+fly secrets set CROSSWORD_CORS_ORIGINS=https://your-frontend-host.example.com
+```
+
+5. If using an external runtime wrapper, set its command/env/secrets too.
+6. Deploy:
+
+```bash
+fly deploy
+```
+
+7. Verify:
+- `fly status`
+- `fly logs`
+- `https://<your-app-name>.fly.dev/health`
 
 ### Explicit non-goals for first deployment
 

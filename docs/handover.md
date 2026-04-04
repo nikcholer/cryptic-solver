@@ -34,11 +34,12 @@ Phase 2 is complete:
 - maintenance command exists: `python backend/tools/cleanup_runtime_data.py`
 - CI covers backend tests, the edge-case harness, and the frontend build
 
-Phase 3 is in progress:
+Phase 3 core objective is complete:
 - heuristic deterministic solver calls now run in-process via direct Python imports
 - PDF import extraction now runs in-process via direct Python imports
-- backend no longer shells out for those local deterministic paths
+- backend no longer shells out for local deterministic paths
 - the external runtime wrapper boundary remains subprocess-based by design
+- any remaining Phase 3 work is optional consolidation/polish, not architectural migration
 
 Fly deployment prep is in progress:
 - baseline `Dockerfile`, `.dockerignore`, and `fly.toml` now exist locally
@@ -48,7 +49,7 @@ Fly deployment prep is in progress:
 
 ## Recommended next task
 
-Finish and test the first Fly deployment, then decide whether any further Phase 3 cleanup is still worth doing.
+Finish and test the first Fly deployment, then decide whether any optional deterministic-tool consolidation is worth doing later.
 
 Primary targets:
 - `fly.toml`
@@ -60,13 +61,14 @@ Current state there:
 - the backend container/deploy shape is defined
 - SQLite-on-volume is the recommended first hosted persistence model
 - the remaining unknowns are operational: actual app name, Fly volume creation, secrets/env, and first deployment behavior
+- no further local architectural refactor is required before deployment
 
 Recommended sequence:
 1. Change the placeholder app name in `fly.toml`.
 2. Create the Fly volume and set deploy-time env/secrets such as `CROSSWORD_CORS_ORIGINS`.
 3. Run the first `fly deploy` and validate `/health`.
 4. Decide whether cleanup should stay manual or move to a scheduled deployment/automation step.
-5. Only after that, decide whether any more shared deterministic-tool cleanup is worth doing.
+5. Only after that, decide whether any shared deterministic-tool cleanup is worth doing as a separate quality pass.
 
 ## Key files to read first
 
