@@ -330,9 +330,48 @@ Status:
 - Decide whether to stop Phase 3 here or do one more cleanup pass on shared deterministic-tool helpers.
 - If continuing Phase 3, consolidate shared wordlist/pattern/abbreviation loading across solver modules.
 
+## Fly.io deployment notes
+
+The current backend shape is a good fit for Fly.io:
+- long-lived FastAPI process
+- SQLite-backed sessions/imported puzzles
+- bundled sample puzzles available from the container image
+- only the external runtime wrapper remains an intentional subprocess seam
+
+Recommended first deployment model:
+- deploy only the backend on Fly
+- keep the SPA on a separate static host
+- attach one Fly volume mounted at `/data`
+- run with `CROSSWORD_SESSION_STORE=sqlite`
+- run with `CROSSWORD_PUZZLE_STORE=sqlite`
+
+Repository support now included:
+- root [`fly.toml`](../fly.toml)
+- root [`Dockerfile`](../Dockerfile)
+- root [`.dockerignore`](../.dockerignore)
+- backend health check at `/health`
+
+Recommended Fly env:
+
+```bash
+CROSSWORD_CORS_ORIGINS=https://your-frontend-host.example.com
+CROSSWORD_SESSION_STORE=sqlite
+CROSSWORD_SESSION_SQLITE_PATH=/data/sessions.sqlite3
+CROSSWORD_PUZZLE_STORE=sqlite
+CROSSWORD_PUZZLE_SQLITE_PATH=/data/puzzles.sqlite3
+CROSSWORD_PUZZLE_FILESYSTEM_ROOT=/app/samples
+```
+
+Operational notes:
+- `fly.toml` uses `auto_stop_machines = "stop"` and `min_machines_running = 0` for low-cost demo hosting
+- change the `app` name in [`fly.toml`](../fly.toml) before first deploy
+- create the named volume before deploy, for example `fly volumes create cryptic_data --region lhr --size 1`
+- if you enable the external runtime wrapper, make sure its executable and env vars exist in the deployed image or command path
+- cleanup for stale sessions/imported puzzles is still a deployment decision: manual, release step, or scheduled automation
+
 ### Explicit non-goals for first deployment
 
 - No attempt to make the FastAPI backend fit Vercel serverless.
 - No attempt to move every persistence concern at once.
-- No requirement to eliminate subprocess solver calls before launch.
+- No requirement to eliminate every subprocess boundary before launch; the external runtime wrapper can remain process-based.
 - No requirement to stream hints one-by-one from the server; one-shot hint payloads remain the preferred design.

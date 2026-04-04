@@ -4,9 +4,10 @@ This file is the quick restart point for the next session.
 
 ## Current status
 
-The repository has verified local Phase 3 changes in progress that are not yet committed.
+The repository has verified local Fly deployment preparation changes in progress that are not yet committed.
 
 Recent commits:
+- `173ce43` Refactor local backend tooling in-process
 - `d8f8c1b` Fix edge-case harness CI wiring
 - `065608b` Complete puzzle import storage abstraction
 - `d699ce4` Add maintenance command for runtime cleanup
@@ -39,31 +40,39 @@ Phase 3 is in progress:
 - backend no longer shells out for those local deterministic paths
 - the external runtime wrapper boundary remains subprocess-based by design
 
+Fly deployment prep is in progress:
+- baseline `Dockerfile`, `.dockerignore`, and `fly.toml` now exist locally
+- recommended first deployment shape is SQLite-backed sessions/imports on a Fly volume mounted at `/data`
+- backend/docs env guidance has been updated for Fly
+- actual Fly launch, secrets, and first deploy have not been executed yet
+
 ## Recommended next task
 
-Finish the remaining Phase 3 cleanup and decide how much of it is worth doing before the next showcase/share pass.
+Finish and test the first Fly deployment, then decide whether any further Phase 3 cleanup is still worth doing.
 
 Primary targets:
-- `backend/app/runtime/adapter.py`
-- `backend/app/services/puzzle_import_service.py`
-- `cryptic_skills/extract_clues_from_pdf_text.py`
-- `cryptic_skills/extract_grid_state_from_pdf_vector.py`
+- `fly.toml`
+- `Dockerfile`
+- `backend/README.md`
+- `docs/hosting.md`
 
 Current state there:
-- deterministic solver candidate generation is already in-process
-- PDF import extraction is already in-process
-- the remaining subprocess seam is the external runtime wrapper, which is acceptable to keep external
-- optional next cleanup is shared helper/module consolidation across the deterministic skill scripts
+- the backend container/deploy shape is defined
+- SQLite-on-volume is the recommended first hosted persistence model
+- the remaining unknowns are operational: actual app name, Fly volume creation, secrets/env, and first deployment behavior
 
 Recommended sequence:
-1. Decide whether to stop Phase 3 here or do one more pass on shared deterministic-tool helpers.
-2. If continuing, centralize shared wordlist/pattern/abbreviation loading used by solver modules.
-3. Keep the external runtime boundary only for LLM-facing operations.
-4. Re-run backend tests and update docs/README language to reflect the new in-process backend shape.
+1. Change the placeholder app name in `fly.toml`.
+2. Create the Fly volume and set deploy-time env/secrets such as `CROSSWORD_CORS_ORIGINS`.
+3. Run the first `fly deploy` and validate `/health`.
+4. Decide whether cleanup should stay manual or move to a scheduled deployment/automation step.
+5. Only after that, decide whether any more shared deterministic-tool cleanup is worth doing.
 
 ## Key files to read first
 
 - `docs/hosting.md`
+- `fly.toml`
+- `Dockerfile`
 - `backend/app/runtime/adapter.py`
 - `backend/app/services/puzzle_import_service.py`
 - `backend/app/stores/session_store.py`
@@ -117,7 +126,7 @@ CORS / hosting env vars:
 ## Verification status
 
 At the last checkpoint before writing this file:
-- worktree contained uncommitted verified Phase 3 changes
+- worktree contained uncommitted verified Fly deployment prep changes
 - backend test suite was passing
 - edge-case harness executed successfully without a configured runtime
 - frontend build was passing
@@ -130,4 +139,4 @@ On the next machine/session, point the assistant at:
 - `docs/hosting.md`
 
 Then say:
-- "Continue from the handover. Phase 3 is already underway; decide whether to stop after the current in-process refactor or do one more shared-helper cleanup pass."
+- "Continue from the handover. The next task is the first Fly deployment using the documented SQLite-on-volume setup."

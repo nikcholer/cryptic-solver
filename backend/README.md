@@ -69,6 +69,30 @@ Session persistence is now behind a store interface. Supported implementations a
 Imported puzzle persistence is now behind a matching store interface. Supported implementations are `filesystem` and `sqlite`.
 The SQLite puzzle store keeps bundled sample puzzles on disk while persisting imported puzzles in SQLite and rehydrating them on demand.
 
+### Fly.io Notes
+
+The repository now includes a baseline [`fly.toml`](../fly.toml) and [`Dockerfile`](../Dockerfile) for backend deployment on Fly.io.
+
+Recommended first deployment shape:
+- run the FastAPI backend as a single Fly app
+- attach one volume mounted at `/data`
+- use SQLite for both session and imported-puzzle persistence
+- keep bundled sample puzzles in the image at `/app/samples`
+
+Recommended backend env for Fly:
+
+```bash
+CROSSWORD_SESSION_STORE=sqlite
+CROSSWORD_SESSION_SQLITE_PATH=/data/sessions.sqlite3
+CROSSWORD_PUZZLE_STORE=sqlite
+CROSSWORD_PUZZLE_SQLITE_PATH=/data/puzzles.sqlite3
+CROSSWORD_PUZZLE_FILESYSTEM_ROOT=/app/samples
+```
+
+You still need to set:
+- `CROSSWORD_CORS_ORIGINS` to the deployed frontend origin
+- `CROSSWORD_RUNTIME_COMMAND` and any harness-specific env vars if you want external agent-backed hint generation
+
 
 Example backend setting:
 
@@ -80,7 +104,7 @@ CROSSWORD_CORS_ORIGINS=https://your-frontend-host.example.com,http://localhost:5
 
 The default backend runtime is local-first:
 - clue-type detection and staged hints come from heuristic text analysis
-- candidate generation comes from the `cryptic_skills/` Python scripts
+- candidate generation comes from in-process calls into the `cryptic_skills/` Python modules
 - mechanical validation can confirm obvious wordplay such as anagrams and hidden words
 
 If you want to hand clue-scoped requests to an external agent runtime, set `CROSSWORD_RUNTIME_COMMAND` to a command that reads JSON on stdin and writes JSON on stdout.

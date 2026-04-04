@@ -1,0 +1,12 @@
+.git
+.github
+.claude
+node_modules
+visualizer/node_modules
+visualizer/dist
+backend_data
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env

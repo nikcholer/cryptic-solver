@@ -1,0 +1,30 @@
+app = "cryptic-solver-api"
+primary_region = "lhr"
+
+[build]
+
+[env]
+  CROSSWORD_SESSION_STORE = "sqlite"
+  CROSSWORD_SESSION_SQLITE_PATH = "/data/sessions.sqlite3"
+  CROSSWORD_PUZZLE_STORE = "sqlite"
+  CROSSWORD_PUZZLE_SQLITE_PATH = "/data/puzzles.sqlite3"
+  CROSSWORD_PUZZLE_FILESYSTEM_ROOT = "/app/samples"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/health"
+
+[[mounts]]
+  source = "cryptic_data"
+  destination = "/data"
