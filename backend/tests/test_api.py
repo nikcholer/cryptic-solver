@@ -10,6 +10,7 @@ import tempfile
 import textwrap
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_ROOT = REPO_ROOT / 'backend'
@@ -24,6 +25,7 @@ from app.runtime.adapter import (  # noqa: E402
     StubRuntimeAdapter,
 )
 from app.services.grid_engine import GridEngine  # noqa: E402
+from app.services.puzzle_import_service import PuzzleImportService  # noqa: E402
 from app.services.puzzle_loader import PuzzleLoader  # noqa: E402
 from app.services.session_service import SessionService  # noqa: E402
 from app.stores.puzzle_store import FilePuzzleStore, SQLitePuzzleStore, build_puzzle_store  # noqa: E402
@@ -143,6 +145,31 @@ class BackendServiceTests(unittest.TestCase):
         self.assertEqual(removed, 1)
         self.assertNotIn(puzzle_id, store.list_puzzle_ids())
         self.assertIn('cryptic-2026-03-03', store.list_puzzle_ids())
+
+    def test_puzzle_import_service_uses_direct_extractors_instead_of_subprocesses(self) -> None:
+        store = FilePuzzleStore(self.repo_root, self.repo_root / 'imports')
+        service = PuzzleImportService(REPO_ROOT, store)
+        sample_dir = REPO_ROOT / 'samples' / 'cryptic-2026-03-03'
+        clues_payload = json.loads(json.dumps({
+            'across': {
+                '1A': {'clue': 'Suppose this happened', 'enum': '(7)'},
+            },
+            'down': {
+                '1D': {'clue': 'Shoes for the beach', 'enum': '(7)'},
+            },
+        }))
+        grid_payload = json.loads((sample_dir / 'grid_state.json').read_text(encoding='utf-8'))
+
+        with patch('app.services.puzzle_import_service.extract_clues_from_pdf', return_value=clues_payload), \
+             patch('app.services.puzzle_import_service.extract_grid_state_from_pdf', return_value=grid_payload):
+            puzzle_id = service.import_pdf('uploaded.pdf', b'%PDF-1.4\n%fake\n', page=1)
+
+        imported_dir = store.get_puzzle_dir(puzzle_id)
+        self.assertTrue((imported_dir / 'clues.yaml').exists())
+        self.assertTrue((imported_dir / 'grid_state.json').exists())
+        loaded = PuzzleLoader(store).load_puzzle(puzzle_id)
+        self.assertEqual(loaded.puzzle_id, puzzle_id)
+        self.assertIn('1A', loaded.clues)
 
     def test_build_puzzle_store_rejects_unknown_backend(self) -> None:
         previous = os.environ.get('CROSSWORD_PUZZLE_STORE')
@@ -417,6 +444,13 @@ class BackendServiceTests(unittest.TestCase):
     def test_anagram_validation_can_confirm(self) -> None:
         session = self.service.create_session(self.puzzle)
         result = self.service.check_answer(self.puzzle, session.session_id, '4D', 'ESTABLISH')
+        self.assertEqual(result['result'].value, 'confirmed')
+        self.assertIn('anagram', result['reason'].lower())
+
+    def test_anagram_validation_does_not_require_subprocess_solver_calls(self) -> None:
+        session = self.service.create_session(self.puzzle)
+        with patch('app.runtime.adapter.subprocess.run', side_effect=AssertionError('deterministic solver path should not shell out')):
+            result = self.service.check_answer(self.puzzle, session.session_id, '4D', 'ESTABLISH')
         self.assertEqual(result['result'].value, 'confirmed')
         self.assertIn('anagram', result['reason'].lower())
 

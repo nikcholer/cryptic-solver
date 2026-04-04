@@ -6,10 +6,11 @@ import re
 import shlex
 import subprocess
 import sys
+from importlib import import_module
 from dataclasses import dataclass
 import logging
 from pathlib import Path
-from typing import Protocol
+from typing import Callable, Protocol
 
 from app.models.common import HintKind, ValidationResult
 from app.models.puzzle import PuzzleClue, PuzzleDefinition
@@ -237,8 +238,8 @@ class HeuristicRuntimeAdapter:
         self.repo_root = repo_root
         self.skills_dir = repo_root / 'cryptic_skills'
         self.words_path = self.skills_dir / 'words.txt'
-        self.python_executable = Path(sys.executable)
         self.wordlist = self._load_wordlist(self.words_path)
+        self.solver_functions = self._load_solver_functions(repo_root)
         self.semantic_adjudicator = semantic_adjudicator
         self.runtime_gateway = runtime_gateway
 
@@ -446,25 +447,25 @@ class HeuristicRuntimeAdapter:
         if clue_type == 'anagram' and fodder_words:
             fodder = ''.join(_normalize_answer(word) for word in fodder_words)
             if len(fodder) == clue.answer_length:
-                result = self._run_solver('anagram.py', ['--fodder', fodder, '--pattern', clean_pattern])
+                result = self._solve_anagram(fodder, clean_pattern)
                 return [candidate.upper() for candidate in result.get('candidates', [])]
         if clue_type == 'hidden' and fodder_words:
-            result = self._run_solver('hidden.py', ['--fodder', ' '.join(fodder_words), '--length', str(clue.answer_length), '--pattern', clean_pattern])
+            result = self._solve_hidden(' '.join(fodder_words), clue.answer_length, clean_pattern)
             return [candidate.upper() for candidate in result.get('candidates', [])]
         if clue_type == 'reversal' and fodder_words:
             fodder = ''.join(_normalize_answer(word) for word in fodder_words)
             if len(fodder) == clue.answer_length:
-                result = self._run_solver('reversal.py', ['--fodder', fodder, '--pattern', clean_pattern])
+                result = self._solve_reversal(fodder, clean_pattern)
                 return [candidate.upper() for candidate in result.get('candidates', [])]
         if clue_type == 'container' and indicator_index is not None and 0 < indicator_index < len(words) - 1:
             outer = words[indicator_index - 1]
             inner = words[indicator_index + 1]
-            result = self._run_solver('insertion.py', ['--outer', outer, '--fodder', inner, '--pattern', clean_pattern])
+            result = self._solve_insertion(outer, inner, clean_pattern)
             return [candidate['candidate'].upper() for candidate in result.get('candidates', [])]
         if clue_type == 'initials':
             return self._initials_candidates(words, clean_pattern)
         if clue_type == 'charade' and len(words) >= 2:
-            result = self._run_solver('charade.py', ['--components', words[0], words[-1], '--pattern', clean_pattern])
+            result = self._solve_charade([words[0], words[-1]], clean_pattern)
             return [candidate['candidate'].upper() for candidate in result.get('candidates', [])]
         return []
 
@@ -483,15 +484,55 @@ class HeuristicRuntimeAdapter:
                     candidates.append(initials)
         return candidates
 
-    def _run_solver(self, script_name: str, args: list[str]) -> dict[str, object]:
-        script_path = self.skills_dir / script_name
-        completed = subprocess.run([str(self.python_executable), str(script_path), *args], capture_output=True, text=True, cwd=self.repo_root, check=False)
-        if completed.returncode != 0:
+    def _solve_anagram(self, fodder: str, pattern: str) -> dict[str, object]:
+        solve = self.solver_functions.get('anagram')
+        if solve is None:
             return {}
-        try:
-            return json.loads(completed.stdout)
-        except json.JSONDecodeError:
+        return solve(fodder, pattern, wordlist_path=str(self.words_path))
+
+    def _solve_hidden(self, fodder: str, length: int, pattern: str) -> dict[str, object]:
+        solve = self.solver_functions.get('hidden')
+        if solve is None:
             return {}
+        return solve(fodder, length, pattern, wordlist_path=str(self.words_path))
+
+    def _solve_reversal(self, fodder: str, pattern: str) -> dict[str, object]:
+        solve = self.solver_functions.get('reversal')
+        if solve is None:
+            return {}
+        return solve(fodder, pattern, wordlist_path=str(self.words_path))
+
+    def _solve_insertion(self, outer: str, fodder: str, pattern: str) -> dict[str, object]:
+        solve = self.solver_functions.get('insertion')
+        if solve is None:
+            return {}
+        return solve(fodder, outer, pattern, wordlist_path=str(self.words_path), abbrev_path=str(self.skills_dir / 'abbreviations.json'))
+
+    def _solve_charade(self, components: list[str], pattern: str) -> dict[str, object]:
+        solve = self.solver_functions.get('charade')
+        if solve is None:
+            return {}
+        return solve(components, pattern, wordlist_path=str(self.words_path), abbrev_path=str(self.skills_dir / 'abbreviations.json'))
+
+    def _load_solver_functions(self, repo_root: Path) -> dict[str, Callable[..., dict[str, object]]]:
+        if str(repo_root) not in sys.path:
+            sys.path.insert(0, str(repo_root))
+        loaded: dict[str, Callable[..., dict[str, object]]] = {}
+        module_names = {
+            'anagram': ('cryptic_skills.anagram', 'solve_anagram'),
+            'hidden': ('cryptic_skills.hidden', 'solve_hidden'),
+            'reversal': ('cryptic_skills.reversal', 'solve_reversal'),
+            'charade': ('cryptic_skills.charade', 'solve_charade'),
+            'insertion': ('cryptic_skills.insertion', 'solve_insertion'),
+        }
+        for key, (module_name, function_name) in module_names.items():
+            try:
+                module = import_module(module_name)
+                solve = getattr(module, function_name)
+            except Exception:
+                continue
+            loaded[key] = solve
+        return loaded
 
     def _hint_for_level(self, clue: PuzzleClue, pattern: str, analysis: Analysis, level: int) -> tuple[HintKind, str]:
         if level == 1:

@@ -223,7 +223,10 @@ This section records the current plan derived from the discussion above and the 
 - Local development now mirrors split hosting: SPA on `127.0.0.1:5173`, API on `127.0.0.1:8000`.
 - Session persistence is now behind a store interface, with `filesystem` and `sqlite` session backends available. Filesystem-backed session storage can be redirected by env.
 - Imported puzzle persistence is now behind a store interface, with `filesystem` and `sqlite` backends available.
-- Deterministic solver calls still run via Python subprocesses against `cryptic_skills/*.py`.
+- CI now exercises backend tests, the edge-case harness, and a frontend production build.
+- Heuristic deterministic solver calls now run in-process via direct imports from `cryptic_skills/*.py`.
+- PDF import extraction now runs in-process via direct imports from `cryptic_skills/*.py`.
+- The external runtime wrapper remains the intentional subprocess boundary.
 
 ### Target architecture
 
@@ -283,6 +286,13 @@ Notes:
 
 - This phase is important for robustness, but it is not a prerequisite for initial split hosting if the API runs on a container host with acceptable persistence characteristics.
 
+Status:
+
+- Complete.
+- Sessions support `filesystem` and `sqlite`.
+- Imported puzzles support `filesystem` and `sqlite`.
+- Cleanup/TTL support exists for both.
+
 ### Phase 3: Backend internal cleanup
 
 Goal: simplify backend execution boundaries and reduce subprocess overhead.
@@ -298,6 +308,13 @@ Notes:
 - This is a code-quality and performance improvement.
 - It is not required to achieve SPA/API split hosting.
 
+Status:
+
+- In progress.
+- Deterministic clue-family solver calls are now in-process.
+- PDF import extraction is now in-process.
+- Remaining external-process usage is the agent/runtime wrapper seam.
+
 ### Product/UX implications
 
 - Selecting a clue should be able to trigger background hint-plan generation.
@@ -308,12 +325,10 @@ Notes:
 ### Immediate backlog
 
 - Decide the first API hosting target.
-- Keep filesystem-backed sessions for first deployment unless hosting constraints force an earlier storage migration.
 - For hosted persistence with minimal operational overhead, prefer SQLite-backed sessions and imported puzzles before considering a separate document database.
-- Add a second session-store implementation for hosted persistence.
-- Add a second puzzle-store implementation for hosted persistence.
 - Decide whether cleanup runs manually, on deploy, or on a schedule.
-- After storage is abstracted, refactor solver subprocess calls into in-process imports.
+- Decide whether to stop Phase 3 here or do one more cleanup pass on shared deterministic-tool helpers.
+- If continuing Phase 3, consolidate shared wordlist/pattern/abbreviation loading across solver modules.
 
 ### Explicit non-goals for first deployment
 

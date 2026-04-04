@@ -142,6 +142,23 @@ def build_grid_state(white_cells: set[tuple[int, int]], number_positions: dict[i
     }
 
 
+def extract_grid_state_from_pdf(pdf_path: Path, page_number: int = 1) -> dict[str, object]:
+    reader = PdfReader(str(pdf_path))
+    page_index = page_number - 1
+    if page_index < 0 or page_index >= len(reader.pages):
+        raise ValueError(f'Page {page_number} is out of range for {pdf_path}')
+
+    page = reader.pages[page_index]
+    white_cells = extract_white_cells(page)
+    number_positions = extract_number_positions(page)
+    return build_grid_state(white_cells, number_positions)
+
+
+def write_grid_state_json(payload: dict[str, object], out_path: Path) -> None:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Extract Telegraph-style crossword grid metadata from a born-digital PDF vector page.")
     parser.add_argument('--pdf', required=True, help='Path to the source PDF')
@@ -151,17 +168,12 @@ def main() -> int:
 
     pdf_path = Path(args.pdf).expanduser().resolve()
     out_path = Path(args.out).expanduser().resolve()
-    reader = PdfReader(str(pdf_path))
-    page_index = args.page - 1
-    if page_index < 0 or page_index >= len(reader.pages):
-        raise SystemExit(f'Page {args.page} is out of range for {pdf_path}')
+    try:
+        payload = extract_grid_state_from_pdf(pdf_path, args.page)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
 
-    page = reader.pages[page_index]
-    white_cells = extract_white_cells(page)
-    number_positions = extract_number_positions(page)
-    payload = build_grid_state(white_cells, number_positions)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    write_grid_state_json(payload, out_path)
     across_count = sum(1 for clue_id in payload['clues'] if clue_id.endswith('A'))
     down_count = sum(1 for clue_id in payload['clues'] if clue_id.endswith('D'))
     print(f'Wrote {out_path}')

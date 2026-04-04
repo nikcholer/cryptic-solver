@@ -4,15 +4,15 @@ This file is the quick restart point for the next session.
 
 ## Current status
 
-The repository is clean and the latest completed work is committed.
+The repository has verified local Phase 3 changes in progress that are not yet committed.
 
 Recent commits:
+- `d8f8c1b` Fix edge-case harness CI wiring
+- `065608b` Complete puzzle import storage abstraction
 - `d699ce4` Add maintenance command for runtime cleanup
 - `af3d971` Add retention helpers for stored sessions and imports
 - `d748a9a` Make storage roots configurable
 - `405fe0d` Extend storage adapters for sessions and puzzles
-- `5daf4a4` Abstract backend session storage
-- `5eb6312` Use explicit local API addressing for SPA dev
 
 ## Where the project stands
 
@@ -31,33 +31,46 @@ Phase 2 is complete:
 - filesystem and sqlite roots/paths are configurable by env
 - retention helpers exist for stale sessions and imported puzzles
 - maintenance command exists: `python backend/tools/cleanup_runtime_data.py`
+- CI covers backend tests, the edge-case harness, and the frontend build
 
-Phase 3 has not started.
+Phase 3 is in progress:
+- heuristic deterministic solver calls now run in-process via direct Python imports
+- PDF import extraction now runs in-process via direct Python imports
+- backend no longer shells out for those local deterministic paths
+- the external runtime wrapper boundary remains subprocess-based by design
 
 ## Recommended next task
 
-Start Phase 3: replace subprocess-based deterministic solver calls with direct Python imports.
+Finish the remaining Phase 3 cleanup and decide how much of it is worth doing before the next showcase/share pass.
 
-Primary target:
+Primary targets:
 - `backend/app/runtime/adapter.py`
+- `backend/app/services/puzzle_import_service.py`
+- `cryptic_skills/extract_clues_from_pdf_text.py`
+- `cryptic_skills/extract_grid_state_from_pdf_vector.py`
 
 Current state there:
-- deterministic solvers still shell out to scripts in `cryptic_skills/*.py`
-- backend hosting no longer depends on changing this immediately, but it is the next structural cleanup step
+- deterministic solver candidate generation is already in-process
+- PDF import extraction is already in-process
+- the remaining subprocess seam is the external runtime wrapper, which is acceptable to keep external
+- optional next cleanup is shared helper/module consolidation across the deterministic skill scripts
 
 Recommended sequence:
-1. Identify the solver scripts currently invoked by subprocess.
-2. Extract/import callable functions from those solver modules.
-3. Update `HeuristicRuntimeAdapter._solver_candidates()` to call Python functions directly.
-4. Keep the external runtime boundary only for LLM-facing operations.
-5. Re-run backend tests and add targeted tests for the in-process solver path.
+1. Decide whether to stop Phase 3 here or do one more pass on shared deterministic-tool helpers.
+2. If continuing, centralize shared wordlist/pattern/abbreviation loading used by solver modules.
+3. Keep the external runtime boundary only for LLM-facing operations.
+4. Re-run backend tests and update docs/README language to reflect the new in-process backend shape.
 
 ## Key files to read first
 
 - `docs/hosting.md`
 - `backend/app/runtime/adapter.py`
+- `backend/app/services/puzzle_import_service.py`
 - `backend/app/stores/session_store.py`
 - `backend/app/stores/puzzle_store.py`
+- `cryptic_skills/extract_clues_from_pdf_text.py`
+- `cryptic_skills/extract_grid_state_from_pdf_vector.py`
+- `backend/tools/evaluate_edge_cases.py`
 - `backend/tools/cleanup_runtime_data.py`
 - `backend/tests/test_api.py`
 
@@ -104,9 +117,11 @@ CORS / hosting env vars:
 ## Verification status
 
 At the last checkpoint before writing this file:
-- worktree was clean
+- worktree contained uncommitted verified Phase 3 changes
 - backend test suite was passing
-- cleanup tool executed successfully
+- edge-case harness executed successfully without a configured runtime
+- frontend build was passing
+- GitHub Actions CI on `master` was green
 
 ## Resume prompt suggestion
 
@@ -115,4 +130,4 @@ On the next machine/session, point the assistant at:
 - `docs/hosting.md`
 
 Then say:
-- "Continue from the handover. Start Phase 3 by replacing subprocess solver calls with direct Python imports."
+- "Continue from the handover. Phase 3 is already underway; decide whether to stop after the current in-process refactor or do one more shared-helper cleanup pass."

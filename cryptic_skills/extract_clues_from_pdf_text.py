@@ -89,6 +89,25 @@ def parse_section(lines: list[str], direction: str) -> dict[str, dict[str, objec
     return parsed
 
 
+def extract_clues_from_pdf(pdf_path: Path, page_number: int = 1) -> dict[str, object]:
+    reader = PdfReader(str(pdf_path))
+    page_index = page_number - 1
+    if page_index < 0 or page_index >= len(reader.pages):
+        raise ValueError(f"Page {page_number} is out of range for {pdf_path}")
+
+    lines = cleaned_lines(reader.pages[page_index])
+    across_lines, down_lines = split_sections(lines)
+    return {
+        "across": parse_section(across_lines, "across"),
+        "down": parse_section(down_lines, "down"),
+    }
+
+
+def write_clues_yaml(payload: dict[str, object], out_path: Path) -> None:
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=False), encoding="utf-8")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Extract Telegraph-style crossword clues from a born-digital PDF.")
     parser.add_argument("--pdf", required=True, help="Path to the source PDF")
@@ -98,20 +117,12 @@ def main() -> int:
 
     pdf_path = Path(args.pdf).expanduser().resolve()
     out_path = Path(args.out).expanduser().resolve()
-    reader = PdfReader(str(pdf_path))
-    page_index = args.page - 1
-    if page_index < 0 or page_index >= len(reader.pages):
-        raise SystemExit(f"Page {args.page} is out of range for {pdf_path}")
+    try:
+        payload = extract_clues_from_pdf(pdf_path, args.page)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
 
-    lines = cleaned_lines(reader.pages[page_index])
-    across_lines, down_lines = split_sections(lines)
-    payload = {
-        "across": parse_section(across_lines, "across"),
-        "down": parse_section(down_lines, "down"),
-    }
-
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(yaml.safe_dump(payload, sort_keys=False, allow_unicode=False), encoding="utf-8")
+    write_clues_yaml(payload, out_path)
     print(f"Wrote {out_path}")
     print(f"Across clues: {len(payload['across'])}")
     print(f"Down clues: {len(payload['down'])}")
