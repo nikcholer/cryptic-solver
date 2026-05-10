@@ -4,6 +4,12 @@ A hybrid AI system that combines LLM reasoning with algorithmic solvers to crack
 
 ![Interactive Tutor UI showing a cryptic clue and AI-generated hints](docs/tutor_ui_demo.png)
 
+## Portfolio Narrative
+
+This is a deliberately playful domain used to demonstrate a serious engineering pattern: combine probabilistic language reasoning with deterministic validation. The LLM interprets ambiguous clue text; Python tools handle letter-level mechanics, dictionary checks, patterns and grid constraints.
+
+That same neuro-symbolic split applies to corporate systems where AI is useful for interpretation but cannot be trusted to own exact calculations, compliance rules, permissions or final decisions.
+
 ## What Are Cryptic Crosswords?
 
 Cryptic crosswords are puzzles where each clue is a miniature word puzzle with two paths to the answer:
